@@ -4,16 +4,28 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "predev": "prisma generate",
     "dev": "tsx watch src/index.ts",
-    "build": "tsc",
-    "start": "node dist/index.js"
+    "build": "prisma generate && tsc",
+    "start": "node dist/index.js",
+    "db:migrate": "RUST_LOG=info prisma migrate dev",
+    "db:generate": "prisma generate",
+    "db:studio": "prisma studio",
+    "format": "prettier . --write",
+    "format:check": "prettier . --check"
   },
   "dependencies": {
+    "@prisma/adapter-better-sqlite3": "^7.10.0",
+    "@prisma/client": "^7.10.0",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
     "@types/express": "^5.0.6",
     "@types/node": "^26.5.0",
+    "prettier": "^3.9.6",
+    "prisma": "^7.10.0",
     "tsx": "^4.23.13",
     "typescript": "^7.0.2"
   },
