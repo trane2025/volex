@@ -23,8 +23,9 @@ export const LoginPage = () => {
         width: '100%',
         display: 'flex',
         alignItems: 'center',
-        bgcolor: '#f5f7fb',
+        bgcolor: 'background.default',
         px: 2,
+        py: { xs: 8, sm: 2 },
       }}
     >
       <Container maxWidth="xs" disableGutters>

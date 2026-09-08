@@ -209,13 +209,82 @@ Number(req.params.id) converts the string URL param to a number.
 Number.isNaN(id) checks whether the conversion failed.
 ```
 
+### Route files
+
+Backend routes are now split into route modules:
+
+```txt
+apps/api/src/routes/health.routes.ts
+apps/api/src/routes/users.routes.ts
+```
+
+`src/index.ts` connects route modules:
+
+```txt
+app.use(healthRouter)
+app.use('/users', usersRouter)
+```
+
+Learned ideas:
+
+```txt
+Router() creates a small group of Express routes.
+app.use('/users', usersRouter) adds the /users prefix to routes inside usersRouter.
+usersRouter.get('/:id', ...) becomes GET /users/:id.
+```
+
+### PATCH `/users/:id`
+
+Updates an existing user.
+
+Current behavior:
+
+```txt
+PATCH /users/1      -> 200 + updated user
+PATCH /users/99999  -> 404 + { "message": "Пользователь не найден" }
+PATCH /users/abc    -> 400 + { "message": "Id должен быть числом" }
+```
+
+Learned ideas:
+
+```txt
+PATCH updates part of an existing record.
+Prisma update() changes a record in the database.
+Prisma error P2025 means the record to update was not found.
+The update data object can be built only from fields that were sent in req.body.
+```
+
+### DELETE `/users/:id`
+
+Deletes an existing user.
+
+Current behavior:
+
+```txt
+DELETE /users/1      -> 200 + deleted user
+DELETE /users/99999  -> 404 + { "message": "Пользователь не найден" }
+DELETE /users/abc    -> 400 + { "message": "Id должен быть числом" }
+```
+
+Learned ideas:
+
+```txt
+DELETE removes an existing record.
+Prisma delete() removes a record from the database.
+Prisma error P2025 also appears when the record to delete was not found.
+```
+
 ## Concepts Already Touched
 
 - Frontend and backend are separate programs.
 - Backend receives HTTP requests and returns HTTP responses.
 - Express route means: method + URL + handler.
+- Express Router groups related routes in separate files.
+- `app.use('/prefix', router)` connects a router with a URL prefix.
 - `GET` is usually for reading data.
 - `POST` is usually for creating data.
+- `PATCH` is usually for updating part of an existing record.
+- `DELETE` is usually for deleting an existing record.
 - `req.query` reads URL query parameters.
 - `req.body` reads JSON body data.
 - `req.params` reads dynamic URL path parameters.
@@ -225,38 +294,32 @@ Number.isNaN(id) checks whether the conversion failed.
 
 ## Next Lesson
 
-Organize backend routes with Express Router:
+Build frontend:
 
 ```txt
-src/routes/users.routes.ts
-src/routes/health.routes.ts
+apps/web/src/pages/RegisterPage/RegisterPage.tsx
 ```
 
 Goals:
 
-- understand why `src/index.ts` should not keep growing forever;
-- understand `Router()` from Express;
-- move `/health`, `/db-health`, and `/hello` into `health.routes.ts`;
-- move `/users`, `/users/:id`, and `POST /users` into `users.routes.ts`;
-- understand how `app.use('/users', usersRouter)` combines with `router.get('/:id', ...)`.
+- replace the placeholder register page with a real MUI form;
+- understand controlled inputs with `useState`;
+- keep the fields aligned with the current backend: `email` and optional `name`;
+- use `event.preventDefault()` to stop browser page reload;
+- for now, log the form values in `onSubmit`;
+- do not add passwords/auth yet.
 
-Suggested final structure:
+Suggested fields:
 
 ```txt
-apps/api/src/index.ts
-apps/api/src/routes/health.routes.ts
-apps/api/src/routes/users.routes.ts
+name
+email
 ```
 
-Important behavior should stay the same:
+Suggested next step after this:
 
 ```txt
-GET /health
-GET /db-health
-GET /hello
-GET /users
-POST /users
-GET /users/:id
+Connect RegisterPage to POST /users with fetch.
 ```
 
 Do not start login/auth/WebSocket until the student is comfortable with the basic CRUD routes.
