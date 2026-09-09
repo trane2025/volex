@@ -1,6 +1,6 @@
 # Volex Lesson Progress
 
-Last updated: 2026-09-08
+Last updated: 2026-09-09
 
 ## How To Resume
 
@@ -51,6 +51,10 @@ Current frontend progress:
   - `/messenger` renders `MessengerPage`.
 - `LoginPage` is built with MUI components.
 - The login page has a link to `/register`.
+- `RegisterPage` is a controlled MUI form for `name` and `email`.
+- `RegisterPage` calls `usersApi.create(...)` on submit.
+- The frontend has an API layer in `src/api`.
+- Vite dev server proxies `/api` requests to `http://localhost:4000`.
 - Prettier is installed in `apps/web`.
 
 Useful commands:
@@ -61,6 +65,49 @@ npm run dev
 npm run build
 npm run format
 npm run format:check
+```
+
+### Frontend API Layer
+
+Current files:
+
+```txt
+apps/web/src/api/client.ts
+apps/web/src/api/users.ts
+apps/web/src/api/index.ts
+```
+
+`client.ts` is the shared fetch wrapper.
+
+Available low-level methods:
+
+```txt
+apiClient.get(...)
+apiClient.post(...)
+apiClient.put(...)
+apiClient.patch(...)
+apiClient.delete(...)
+```
+
+`users.ts` is the user-specific API wrapper.
+
+Current user CRUD methods:
+
+```txt
+usersApi.getAll()
+usersApi.getById(id)
+usersApi.create(body)
+usersApi.update(id, body)
+usersApi.delete(id)
+```
+
+Learned ideas:
+
+```txt
+The UI should not call fetch everywhere directly.
+An API wrapper keeps request URLs, HTTP methods, JSON parsing, and API errors in one place.
+VITE_API_URL can configure the API base URL.
+In local development, Vite proxy can forward /api requests to the backend and avoid browser CORS issues.
 ```
 
 ## Backend State
@@ -294,32 +341,18 @@ Prisma error P2025 also appears when the record to delete was not found.
 
 ## Next Lesson
 
-Build frontend:
+Practice reading users on the frontend.
+
+Suggested target:
 
 ```txt
-apps/web/src/pages/RegisterPage/RegisterPage.tsx
+apps/web/src/pages/MessengerPage/MessengerPage.tsx
 ```
 
 Goals:
 
-- replace the placeholder register page with a real MUI form;
-- understand controlled inputs with `useState`;
-- keep the fields aligned with the current backend: `email` and optional `name`;
-- use `event.preventDefault()` to stop browser page reload;
-- for now, log the form values in `onSubmit`;
-- do not add passwords/auth yet.
-
-Suggested fields:
-
-```txt
-name
-email
-```
-
-Suggested next step after this:
-
-```txt
-Connect RegisterPage to POST /users with fetch.
-```
-
-Do not start login/auth/WebSocket until the student is comfortable with the basic CRUD routes.
+- call `usersApi.getAll()`;
+- store loaded users in `useState`;
+- show loading and error states;
+- render the users list with MUI;
+- do not add login/auth/WebSocket yet.

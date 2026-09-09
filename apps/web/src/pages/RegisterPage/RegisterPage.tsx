@@ -1,5 +1,6 @@
 import PersonAddAltRoundedIcon from '@mui/icons-material/PersonAddAltRounded';
 import {
+  Alert,
   Avatar,
   Box,
   Button,
@@ -12,16 +13,50 @@ import {
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { type SubmitEventHandler, useState } from 'react';
+import { ApiError, usersApi } from '../../api';
 
 export const RegisterPage = () => {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const onSubmit: SubmitEventHandler<HTMLFormElement> = (e) => {
+  const onSubmit: SubmitEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
 
-    console.log(email);
-    console.log(name);
+    const trimmedEmail = email.trim();
+    const trimmedName = name.trim();
+
+    if (trimmedEmail.length === 0) {
+      setErrorMessage('Email обязателен');
+      setSuccessMessage('');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    try {
+      const createdUser = await usersApi.create({
+        email: trimmedEmail,
+        ...(trimmedName ? { name: trimmedName } : {}),
+      });
+
+      setSuccessMessage(`Пользователь ${createdUser.email} создан`);
+      setEmail('');
+      setName('');
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setErrorMessage(error.message);
+        return;
+      }
+
+      setErrorMessage('Не удалось создать пользователя');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -65,20 +100,27 @@ export const RegisterPage = () => {
             </Stack>
 
             <Stack spacing={2.5}>
+              {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
+              {successMessage ? <Alert severity="success">{successMessage}</Alert> : null}
+
               <TextField
-                onChange={(e) => setName(e.target.value)}
+                value={name}
+                onChange={(e) => setName(e.target?.value ?? '')}
                 label="Имя"
                 name="name"
                 autoComplete="name"
+                disabled={isSubmitting}
                 fullWidth
               />
 
               <TextField
-                onChange={(e) => setEmail(e.target.value)}
+                value={email}
+                onChange={(e) => setEmail(e.target.value ?? '')}
                 label="Email"
                 name="email"
                 type="email"
                 autoComplete="email"
+                disabled={isSubmitting}
                 fullWidth
                 required
               />
@@ -87,9 +129,10 @@ export const RegisterPage = () => {
                 type="submit"
                 variant="contained"
                 size="large"
+                disabled={isSubmitting}
                 startIcon={<PersonAddAltRoundedIcon />}
               >
-                Зарегистрироваться
+                {isSubmitting ? 'Создаем...' : 'Зарегистрироваться'}
               </Button>
             </Stack>
 
