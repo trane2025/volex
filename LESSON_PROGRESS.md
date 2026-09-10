@@ -1,6 +1,6 @@
 # Volex Lesson Progress
 
-Last updated: 2026-09-09
+Last updated: 2026-09-10
 
 ## How To Resume
 
@@ -44,16 +44,28 @@ Current frontend progress:
 
 - React app is running through Vite.
 - Routing is connected inside `src/App.tsx`.
+- Redux Toolkit store is connected in `src/store/index.ts`.
+- React Redux `<Provider>` wraps `<App />` in `src/main.tsx`.
 - Existing routes:
   - `/` redirects to `/login`;
   - `/login` renders `LoginPage`;
   - `/register` renders `RegisterPage`;
   - `/messenger` renders `MessengerPage`.
+  - `/admin` renders `AdminPage`.
 - `LoginPage` is built with MUI components.
 - The login page has a link to `/register`.
 - `RegisterPage` is a controlled MUI form for `name` and `email`.
-- `RegisterPage` calls `usersApi.create(...)` on submit.
-- The frontend has an API layer in `src/api`.
+- `RegisterPage` still calls the old manual `usersApi.create(...)` on submit.
+- `AdminPage` reads users through RTK Query with `useGetUsersQuery()`.
+- `AdminPage` renders the users table through `TableUsers`.
+- `AdminPage` has loading, error, and empty states.
+- `AdminPage` has started a delete flow with `useDeleteUserMutation()`.
+- `ConfirmDialog` was added as a reusable confirmation dialog.
+- The frontend has a simple API layer in `src/api`.
+- RTK Query has started in `src/store/features/users`.
+- The `usersQuery` RTK Query API has a `GET /users` endpoint and a `DELETE /users/:id` mutation.
+- The `usersQuery.reducer` and `usersQuery.middleware` are connected in `src/store/index.ts`.
+- `RegisterPage` still uses the old manual `src/api` layer.
 - Vite dev server proxies `/api` requests to `http://localhost:4000`.
 - Prettier is installed in `apps/web`.
 
@@ -341,18 +353,75 @@ Prisma error P2025 also appears when the record to delete was not found.
 
 ## Next Lesson
 
-Practice reading users on the frontend.
+Start Redux Toolkit and RTK Query slowly.
 
 Suggested target:
 
 ```txt
-apps/web/src/pages/MessengerPage/MessengerPage.tsx
+apps/web/src/store/
+apps/web/src/store/features/users/
+apps/web/src/main.tsx
+apps/web/src/pages/AdminPage/AdminPage.tsx
+apps/web/src/pages/AdminPage/TableUsers.tsx
+apps/web/src/pages/RegisterPage/RegisterPage.tsx
+apps/web/src/UI/dialogs/ConfirmDialog.tsx
 ```
 
 Goals:
 
-- call `usersApi.getAll()`;
-- store loaded users in `useState`;
-- show loading and error states;
-- render the users list with MUI;
+- explain the finished `useGetUsersQuery()` replacement in `AdminPage`;
+- review the started `DELETE /users/:id` mutation slowly;
+- teach how RTK Query mutation results work, including why `.unwrap()` is useful;
+- explain how the users list refreshes after delete through RTK Query tags/invalidation;
+- then add remaining mutations one by one: create user, update user;
 - do not add login/auth/WebSocket yet.
+
+Completed:
+
+- explained what Redux Toolkit store is and why React needs `<Provider>`;
+- added the store as a tiny step;
+- discussed why `createApi(...)` is more than a normal reducer;
+- discussed folder architecture and chose feature co-location;
+- created `src/store/features/users/`;
+- created a `usersQuery` RTK Query API with only `GET /users`;
+- connected `usersQuery.reducer` to `combineReducers(...)`;
+- connected `usersQuery.middleware` with `getDefaultMiddleware().concat(...)`;
+- explained why RTK Query needs middleware;
+- verified that the app still builds after RTK Query store connection;
+- verified that ESLint passes;
+- ran `npm run format`;
+- exported `useGetUsersQuery` from `src/store/features/users/users.ts`;
+- replaced the manual `AdminPage` loading code with `useGetUsersQuery()`;
+- used `data: users = []` so the UI can treat missing data as an empty list;
+- moved the users table into `TableUsers`;
+- added reusable `ConfirmDialog`;
+- added a first `deleteUser` RTK Query mutation;
+- connected delete confirmation UI in `AdminPage`;
+- added RTK Query cache invalidation for delete with `providesTags` and `invalidatesTags`;
+- verified that `npm run format:check` passes;
+- verified that `npm run lint` passes;
+- verified that `npm run build` passes.
+
+Upcoming:
+
+- explain the difference between `isLoading` and `isFetching`;
+- explain `providesTags` and `invalidatesTags` using the users list example;
+- explain why `await deleteUser(id)` does not throw the same way a normal async function usually does;
+- add `.unwrap()` to the delete flow as the next small learning step;
+- after RTK Query basics, discuss near-real-time updates with `pollingInterval`;
+- then discuss `refetchOnFocus` and `refetchOnReconnect`;
+- only after those simpler tools, return to real-time updates through WebSocket or SSE;
+- keep `RegisterPage` on the old manual `usersApi.create(...)` until the create mutation lesson;
+- do not delete `src/api` yet, because `RegisterPage` still needs it.
+
+Important teaching note:
+
+```txt
+Do not implement all RTK Query CRUD at once.
+Move one operation at a time:
+1. store + Provider
+2. GET /users
+3. POST /users
+4. DELETE /users/:id
+5. PATCH /users/:id
+```

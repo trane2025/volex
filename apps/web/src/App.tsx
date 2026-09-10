@@ -7,6 +7,9 @@ import { createVolexTheme } from './theme.ts';
 
 const COLOR_MODE_STORAGE_KEY = 'volex-color-mode';
 
+const AdminPage = lazy(() =>
+  import('./pages/AdminPage').then((module) => ({ default: module.AdminPage })),
+);
 const LoginPage = lazy(() =>
   import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })),
 );
@@ -66,6 +69,7 @@ export const App = () => {
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/messenger" element={<MessengerPage />} />
+              <Route path="/admin" element={<AdminPage />} />
             </Routes>
           </Suspense>
         </Layout>
