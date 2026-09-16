@@ -13,14 +13,16 @@ import {
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import { type SubmitEventHandler, useState } from 'react';
-import { ApiError, usersApi } from '../../api';
+import { useCreateUserMutation } from '../../store/features/users';
+import { getCreateUserErrorMessage } from './helpers/getCreateUserErrorMessage.ts';
 
 export const RegisterPage = () => {
+  const [createUser, { isLoading: isCreatingUser }] = useCreateUserMutation();
+
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const onSubmit: SubmitEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
@@ -34,28 +36,20 @@ export const RegisterPage = () => {
       return;
     }
 
-    setIsSubmitting(true);
     setErrorMessage('');
     setSuccessMessage('');
 
     try {
-      const createdUser = await usersApi.create({
+      const createdUser = await createUser({
         email: trimmedEmail,
         ...(trimmedName ? { name: trimmedName } : {}),
-      });
+      }).unwrap();
 
       setSuccessMessage(`Пользователь ${createdUser.email} создан`);
       setEmail('');
       setName('');
     } catch (error) {
-      if (error instanceof ApiError) {
-        setErrorMessage(error.message);
-        return;
-      }
-
-      setErrorMessage('Не удалось создать пользователя');
-    } finally {
-      setIsSubmitting(false);
+      setErrorMessage(getCreateUserErrorMessage(error));
     }
   };
 
@@ -109,7 +103,7 @@ export const RegisterPage = () => {
                 label="Имя"
                 name="name"
                 autoComplete="name"
-                disabled={isSubmitting}
+                disabled={isCreatingUser}
                 fullWidth
               />
 
@@ -120,7 +114,7 @@ export const RegisterPage = () => {
                 name="email"
                 type="email"
                 autoComplete="email"
-                disabled={isSubmitting}
+                disabled={isCreatingUser}
                 fullWidth
                 required
               />
@@ -129,10 +123,10 @@ export const RegisterPage = () => {
                 type="submit"
                 variant="contained"
                 size="large"
-                disabled={isSubmitting}
+                disabled={isCreatingUser}
                 startIcon={<PersonAddAltRoundedIcon />}
               >
-                {isSubmitting ? 'Создаем...' : 'Зарегистрироваться'}
+                {isCreatingUser ? 'Создаем...' : 'Зарегистрироваться'}
               </Button>
             </Stack>
 

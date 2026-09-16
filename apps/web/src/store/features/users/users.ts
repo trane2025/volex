@@ -1,5 +1,5 @@
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
-import type { User } from './types.ts';
+import type { CreateUserBody, UpdateUserRequest, User } from './types.ts';
 
 export const usersQuery = createApi({
   reducerPath: 'users',
@@ -29,6 +29,25 @@ export const usersQuery = createApi({
             // Иначе после создания/удаления RTK Query не будет знать, какой список обновлять.
             [{ type: 'User' as const, id: 'LIST' }],
     }),
+    createUser: builder.mutation<User, CreateUserBody>({
+      query: (body) => ({
+        url: '/users',
+        method: 'POST',
+        body,
+      }),
+      invalidatesTags: [{ type: 'User', id: 'LIST' }],
+    }),
+    updateUser: builder.mutation<User, UpdateUserRequest>({
+      query: ({ id, body }) => ({
+        url: `/users/${id}`,
+        method: 'PATCH',
+        body,
+      }),
+      invalidatesTags: (_result, _error, { id }) => [
+        { type: 'User', id },
+        { type: 'User', id: 'LIST' },
+      ],
+    }),
     deleteUser: builder.mutation<void, number>({
       query: (id) => ({
         url: `/users/${id}`,
@@ -46,4 +65,9 @@ export const usersQuery = createApi({
   }),
 });
 
-export const { useGetUsersQuery, useDeleteUserMutation } = usersQuery;
+export const {
+  useGetUsersQuery,
+  useDeleteUserMutation,
+  useCreateUserMutation,
+  useUpdateUserMutation,
+} = usersQuery;

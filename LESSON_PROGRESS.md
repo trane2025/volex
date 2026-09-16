@@ -1,6 +1,6 @@
 # Volex Lesson Progress
 
-Last updated: 2026-09-10
+Last updated: 2026-09-15
 
 ## How To Resume
 
@@ -13,9 +13,12 @@ In a new chat, say:
 The learning format should stay slow and practical:
 
 - one small concept at a time;
+- use slightly larger practical blocks when the student asks for more pace;
 - explain what the code means before adding more code;
 - give a small task for the student to do by hand;
 - check the result after the student changes files;
+- the assistant should run Prettier automatically; do not make formatting-only fixes a student exercise;
+- do not run `lint`/`build` after every tiny TypeScript step unless the change is risky or the lesson is reaching a checkpoint;
 - avoid jumping ahead into auth, WebSocket, or production architecture too early.
 
 ## Project Path
@@ -55,17 +58,33 @@ Current frontend progress:
 - `LoginPage` is built with MUI components.
 - The login page has a link to `/register`.
 - `RegisterPage` is a controlled MUI form for `name` and `email`.
-- `RegisterPage` still calls the old manual `usersApi.create(...)` on submit.
+- `RegisterPage` now creates users through RTK Query with `useCreateUserMutation()`.
+- `RegisterPage` uses `getCreateUserErrorMessage(...)` to read backend error messages from RTK Query errors.
 - `AdminPage` reads users through RTK Query with `useGetUsersQuery()`.
+- `AdminPage` passes RTK Query options: `pollingInterval: 5000`, `refetchOnFocus: true`, and `refetchOnReconnect: true`.
 - `AdminPage` renders the users table through `TableUsers`.
 - `AdminPage` has loading, error, and empty states.
-- `AdminPage` has started a delete flow with `useDeleteUserMutation()`.
+- `AdminPage` delete flow uses `useDeleteUserMutation()` with `.unwrap()` and `ConfirmDialog`.
+- `AdminPage` uses `isLoading` for first load and `isFetching` for refresh/polling state.
+- The refresh button uses `isFetching` to disable itself and show a spinner.
+- `AdminPage` stores the selected edit user in `userToEdit`.
+- `AdminPage` passes `onEditUser={handleOpenEditUser}` into `TableUsers`.
+- `AdminPage` now opens a reusable `TextFieldsDialog` for editing a user.
+- `AdminPage` submits edit values through `useUpdateUserMutation()` and `.unwrap()`.
+- `AdminPage` sends an empty edit name as `undefined`, not as an empty string.
+- `AdminPage` shows update loading state through `isLoadingUpdate`.
+- `AdminPage` stores edit errors in `editUserErrorMessage` and reads backend messages through `getUpdateUserErrorMessage(...)`.
+- Current app code no longer imports the old manual `src/api` user layer; `rg` only finds `apiClient`/`usersApi` inside `src/api` itself.
+- `TableUsers` has an edit icon button and accepts `onEditUser?: (user: User) => void`.
+- `TableUsers` does not call `useUpdateUserMutation` directly; it only reports which user was selected.
 - `ConfirmDialog` was added as a reusable confirmation dialog.
+- `TextFieldsDialog` was added as a reusable dialog that collects named text fields through `FormData`.
 - The frontend has a simple API layer in `src/api`.
 - RTK Query has started in `src/store/features/users`.
-- The `usersQuery` RTK Query API has a `GET /users` endpoint and a `DELETE /users/:id` mutation.
+- The `usersQuery` RTK Query API has `GET /users`, `POST /users`, `PATCH /users/:id`, and `DELETE /users/:id`.
+- The `updateUser` mutation is typed as `builder.mutation<User, UpdateUserRequest>(...)`, uses `method: 'PATCH'`, invalidates the changed user and the users list, and is exported as `useUpdateUserMutation`.
 - The `usersQuery.reducer` and `usersQuery.middleware` are connected in `src/store/index.ts`.
-- `RegisterPage` still uses the old manual `src/api` layer.
+- The old manual `src/api` layer still exists for comparison/cleanup, but `RegisterPage` no longer uses it.
 - Vite dev server proxies `/api` requests to `http://localhost:4000`.
 - Prettier is installed in `apps/web`.
 
@@ -102,6 +121,8 @@ apiClient.delete(...)
 ```
 
 `users.ts` is the user-specific API wrapper.
+
+This old manual API layer is currently kept as learning material and for a later cleanup step. New user reads/creates/deletes are being moved to RTK Query.
 
 Current user CRUD methods:
 
@@ -350,10 +371,18 @@ Prisma error P2025 also appears when the record to delete was not found.
 - `Number.isNaN(...)` can validate failed string-to-number conversion.
 - Prisma is the layer that talks to the database.
 - Database constraints are real rules inside the database, not only TypeScript checks.
+- Redux Toolkit store gives RTK Query a place to keep cached request state.
+- RTK Query generates hooks from endpoint names, such as `useGetUsersQuery` and `useCreateUserMutation`.
+- `.unwrap()` makes an RTK Query mutation feel like a normal async function: success returns data, failure throws.
+- `tagTypes` declares allowed cache tag categories, such as `User`.
+- `providesTags` describes which cache tags a query result provides.
+- `invalidatesTags` marks cache tags stale after a mutation so active queries can refetch.
+- `id: 'LIST'` is a local convention for tagging the whole users list, not a backend id.
+- `isLoading` means first load without data; `isFetching` means any in-flight request, including refetch/polling.
 
 ## Next Lesson
 
-Start Redux Toolkit and RTK Query slowly.
+Continue Redux Toolkit and RTK Query CRUD.
 
 Suggested target:
 
@@ -363,17 +392,19 @@ apps/web/src/store/features/users/
 apps/web/src/main.tsx
 apps/web/src/pages/AdminPage/AdminPage.tsx
 apps/web/src/pages/AdminPage/TableUsers.tsx
+apps/web/src/pages/AdminPage/helpers/getUpdateUserErrorMessage.ts
 apps/web/src/pages/RegisterPage/RegisterPage.tsx
+apps/web/src/pages/RegisterPage/helpers/getCreateUserErrorMessage.ts
 apps/web/src/UI/dialogs/ConfirmDialog.tsx
+apps/web/src/UI/dialogs/TextFieldsDialog/
 ```
 
 Goals:
 
-- explain the finished `useGetUsersQuery()` replacement in `AdminPage`;
-- review the started `DELETE /users/:id` mutation slowly;
-- teach how RTK Query mutation results work, including why `.unwrap()` is useful;
-- explain how the users list refreshes after delete through RTK Query tags/invalidation;
-- then add remaining mutations one by one: create user, update user;
+- review the old manual `src/api` layer now that user read/create/update/delete flows use RTK Query;
+- decide whether to keep `src/api` temporarily as learning material or remove unused manual user API code;
+- explain why duplicate API layers are useful while learning but risky once the app grows;
+- if removing, delete only unused manual API files after confirming no imports remain;
 - do not add login/auth/WebSocket yet.
 
 Completed:
@@ -398,30 +429,82 @@ Completed:
 - added a first `deleteUser` RTK Query mutation;
 - connected delete confirmation UI in `AdminPage`;
 - added RTK Query cache invalidation for delete with `providesTags` and `invalidatesTags`;
+- added `.unwrap()` to the delete flow;
+- explained why `await deleteUser(id)` does not throw like a normal async function unless `.unwrap()` is used;
+- explained the difference between `isLoading` and `isFetching`;
+- changed refresh button disabling from `isLoading` to `isFetching`;
+- added a refresh-button spinner while `isFetching`;
+- added `pollingInterval: 5000` to `useGetUsersQuery`;
+- added `refetchOnFocus: true`;
+- added `refetchOnReconnect: true`;
+- explained `tagTypes: ['User']`;
+- explained `providesTags`, `invalidatesTags`, and why `id: 'LIST'` is uppercase by convention;
+- added `CreateUserBody` in `src/store/features/users/types.ts`;
+- added `createUser` mutation with `POST /users`;
+- exported `useCreateUserMutation`;
+- migrated `RegisterPage` from manual `usersApi.create(...)` to `useCreateUserMutation()`;
+- replaced manual `isSubmitting` state with mutation `isLoading: isCreatingUser`;
+- added `getCreateUserErrorMessage(...)` helper for RTK Query create-user errors;
+- added `UpdateUserBody = Partial<CreateUserBody>`;
+- added `UpdateUserRequest` with `id` and `body`;
+- explained the `builder.mutation<Response, Argument>` generic using create/delete/update examples;
+- explained why update needs both `id` for the URL and `body` for the JSON request body;
+- finished the `updateUser` mutation with `method: 'PATCH'`;
+- kept update invalidation for both `{ type: 'User', id }` and `{ type: 'User', id: 'LIST' }`;
+- exported `useUpdateUserMutation` from `usersQuery`;
+- ran `npm run format` after the user edited `users.ts`;
+- added an edit icon button to `TableUsers`;
+- typed the table callback as `onEditUser?: (user: User) => void`;
+- explained that `TableUsers` should pass the selected `User` upward instead of building an `UpdateUserRequest` itself;
+- ran `npm run format` after editing the table props;
+- verified that `npm run build` passes after the table prop cleanup;
+- added `userToEdit` state in `AdminPage`;
+- passed `onEditUser={setUserToEdit}` into `TableUsers`;
+- added a temporary info alert showing the selected edit user email;
+- added `editEmail` and `editName` state for the future edit form;
+- added `handleOpenEditUser(user)` to set `userToEdit`, `editEmail`, and `editName`;
+- replaced direct `onEditUser={setUserToEdit}` with `onEditUser={handleOpenEditUser}`;
+- kept the user's `useUpdateUserMutation()` groundwork in `AdminPage`; `updateUser`, `editEmail`, and `editName` are not used yet and should be wired in the next step;
+- ran `npm run format` after the `AdminPage` edit-state step;
+- user replaced the temporary edit flow with a reusable `TextFieldsDialog`;
+- added `TextFieldsDialogValues<FieldName>` typed as `Record<FieldName, string>`;
+- `TextFieldsDialog` collects submitted values from `FormData`;
+- `AdminPage` now renders edit fields for `name` and `email` inside `TextFieldsDialog`;
+- `AdminPage` calls `updateUser({ id: userToEdit.id, body: { email, name } }).unwrap()` on edit submit;
+- changed edit submit so an empty name is sent as `undefined` instead of `''`;
+- added `getUpdateUserErrorMessage(...)` for RTK Query update errors;
+- update dialog uses `isLoadingUpdate` to disable fields/buttons and show a submit spinner;
+- ran `npm run format` after the reusable edit dialog implementation;
+- verified that `npm run lint` passes after the reusable edit dialog implementation;
+- verified that `npm run build` passes after the reusable edit dialog implementation;
+- discussed barrel exports and decided not to add a shared dialogs index because tests can end up loading everything re-exported from a broad index;
+- ran `npm run format` after changing empty edit names to `undefined`;
+- verified that `npm run build` passes after changing empty edit names to `undefined`;
+- checked old manual API usage with `rg`; no app imports remain outside `src/api` itself;
 - verified that `npm run format:check` passes;
 - verified that `npm run lint` passes;
 - verified that `npm run build` passes.
 
 Upcoming:
 
-- explain the difference between `isLoading` and `isFetching`;
-- explain `providesTags` and `invalidatesTags` using the users list example;
-- explain why `await deleteUser(id)` does not throw the same way a normal async function usually does;
-- add `.unwrap()` to the delete flow as the next small learning step;
-- after RTK Query basics, discuss near-real-time updates with `pollingInterval`;
-- then discuss `refetchOnFocus` and `refetchOnReconnect`;
+- continue by reviewing the old manual `src/api` layer;
+- check imports to confirm whether `src/api/users.ts` and `src/api/client.ts` are still used;
+- discuss cleanup before deleting anything;
+- keep direct dialog imports for now instead of adding a broad shared barrel export;
+- after RTK Query CRUD basics, discuss whether the old manual `src/api` layer should stay or be removed;
 - only after those simpler tools, return to real-time updates through WebSocket or SSE;
-- keep `RegisterPage` on the old manual `usersApi.create(...)` until the create mutation lesson;
-- do not delete `src/api` yet, because `RegisterPage` still needs it.
+- do not delete `src/api` automatically; discuss cleanup first.
 
 Important teaching note:
 
 ```txt
-Do not implement all RTK Query CRUD at once.
-Move one operation at a time:
+The student asked to do slightly larger lesson blocks than one-line microsteps.
+Still keep each block practical and explain the concept before asking for changes.
+
+Current RTK Query order:
 1. store + Provider
 2. GET /users
 3. POST /users
 4. DELETE /users/:id
-5. PATCH /users/:id
+5. PATCH /users/:id - RTK Query endpoint and admin edit UI completed; reusable dialog pattern is next
 ```

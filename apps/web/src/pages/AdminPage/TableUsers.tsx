@@ -1,4 +1,5 @@
 import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
+import EditRoundedIcon from '@mui/icons-material/EditRounded';
 import {
   IconButton,
   Table,
@@ -14,6 +15,7 @@ import type { User } from '../../store/features/users/types.ts';
 interface TableUsersProps {
   users: User[];
   onDeleteUser?: (user: User) => void;
+  onEditUser?: (user: User) => void;
 }
 
 const formatDateTime = (value: string) => {
@@ -29,7 +31,7 @@ const formatDateTime = (value: string) => {
   }).format(date);
 };
 
-export const TableUsers = ({ users, onDeleteUser }: TableUsersProps) => {
+export const TableUsers = ({ users, onDeleteUser, onEditUser }: TableUsersProps) => {
   return (
     <TableContainer sx={{ overflowX: 'auto' }}>
       <Table>
@@ -53,6 +55,16 @@ export const TableUsers = ({ users, onDeleteUser }: TableUsersProps) => {
               <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDateTime(user.createdAt)}</TableCell>
               <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDateTime(user.updatedAt)}</TableCell>
               <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
+                <Tooltip title="Редактировать пользователя">
+                  <IconButton
+                    aria-label={`Редактировать пользователя ${user.email}`}
+                    color="primary"
+                    onClick={() => onEditUser?.(user)}
+                    size="small"
+                  >
+                    <EditRoundedIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
                 <Tooltip title="Удалить пользователя">
                   <IconButton
                     aria-label={`Удалить пользователя ${user.email}`}

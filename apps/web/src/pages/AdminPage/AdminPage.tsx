@@ -12,15 +12,34 @@ import {
   Divider,
   Paper,
   Stack,
+  TextField,
   Typography,
 } from '@mui/material';
-import { ConfirmDialog } from '../../UI/dialogs';
-import { useDeleteUserMutation, useGetUsersQuery } from '../../store/features/users';
+import { ConfirmDialog } from '../../UI/dialogs/ConfirmDialog.tsx';
+import { TextFieldsDialog, type TextFieldsDialogValues } from '../../UI/dialogs/TextFieldsDialog';
+import {
+  useDeleteUserMutation,
+  useGetUsersQuery,
+  useUpdateUserMutation,
+} from '../../store/features/users';
 import type { User } from '../../store/features/users/types.ts';
 import { TableUsers } from './TableUsers.tsx';
+import { getUpdateUserErrorMessage } from './helpers/getUpdateUserErrorMessage.ts';
+
+type EditUserField = 'email' | 'name';
 
 export const AdminPage = () => {
-  const { data: users = [], isLoading, refetch, isError } = useGetUsersQuery();
+  const {
+    data: users = [],
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+  } = useGetUsersQuery(undefined, {
+    pollingInterval: 5000,
+    refetchOnFocus: true,
+    refetchOnReconnect: true,
+  });
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [deleteUser, { isLoading: isLoadingDelete }] = useDeleteUserMutation();
 
@@ -33,8 +52,55 @@ export const AdminPage = () => {
       return;
     }
 
-    await deleteUser(userToDelete.id);
-    setUserToDelete(null);
+    try {
+      await deleteUser(userToDelete.id).unwrap();
+      setUserToDelete(null);
+    } catch (error) {
+      console.error('Не удалось удалить пользователя', error);
+    }
+  };
+
+  const [updateUser, { isLoading: isLoadingUpdate }] = useUpdateUserMutation();
+  const [userToEdit, setUserToEdit] = useState<User | null>(null);
+  const [editUserErrorMessage, setEditUserErrorMessage] = useState('');
+
+  const handleOpenEditUser = (user: User) => {
+    setUserToEdit(user);
+    setEditUserErrorMessage('');
+  };
+
+  const handleCloseEditDialog = () => {
+    setUserToEdit(null);
+    setEditUserErrorMessage('');
+  };
+
+  const handleSubmitEditUser = async (values: TextFieldsDialogValues<EditUserField>) => {
+    if (!userToEdit) {
+      return;
+    }
+
+    const email = values.email.trim();
+    const name = values.name.trim();
+
+    if (email.length === 0) {
+      setEditUserErrorMessage('Email обязателен');
+      return;
+    }
+
+    setEditUserErrorMessage('');
+
+    try {
+      await updateUser({
+        id: userToEdit.id,
+        body: {
+          email,
+          name: name.length > 0 ? name : undefined,
+        },
+      }).unwrap();
+      setUserToEdit(null);
+    } catch (error) {
+      setEditUserErrorMessage(getUpdateUserErrorMessage(error));
+    }
   };
 
   return (
@@ -83,9 +149,15 @@ export const AdminPage = () => {
 
               <Button
                 variant="outlined"
-                startIcon={<RefreshRoundedIcon />}
+                startIcon={
+                  isFetching ? (
+                    <CircularProgress color="inherit" size={16} />
+                  ) : (
+                    <RefreshRoundedIcon />
+                  )
+                }
+                disabled={isFetching}
                 onClick={refetch}
-                disabled={isLoading}
               >
                 Обновить
               </Button>
@@ -154,11 +226,48 @@ export const AdminPage = () => {
                 </Typography>
               </Box>
             ) : (
-              <TableUsers users={users} onDeleteUser={setUserToDelete} />
+              <TableUsers
+                users={users}
+                onDeleteUser={setUserToDelete}
+                onEditUser={handleOpenEditUser}
+              />
             )}
           </Paper>
         </Stack>
       </Container>
+
+      {userToEdit ? (
+        <TextFieldsDialog
+          open={Boolean(userToEdit)}
+          title="Редактировать пользователя"
+          description={`Обновите данные пользователя ${userToEdit.email}`}
+          errorText={editUserErrorMessage}
+          isSubmitting={isLoadingUpdate}
+          submitText="Сохранить"
+          onClose={handleCloseEditDialog}
+          onSubmit={handleSubmitEditUser}
+        >
+          <TextField
+            sx={{ marginTop: 3 }}
+            name="name"
+            label="Имя"
+            defaultValue={userToEdit.name ?? ''}
+            autoComplete="name"
+            autoFocus
+            fullWidth
+          />
+          <TextField
+            sx={{ marginTop: 3 }}
+            name="email"
+            label="Email"
+            type="email"
+            defaultValue={userToEdit.email}
+            autoComplete="email"
+            required
+            fullWidth
+          />
+        </TextFieldsDialog>
+      ) : null}
 
       <ConfirmDialog
         open={Boolean(userToDelete)}
