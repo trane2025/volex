@@ -1,3 +1,4 @@
+import { hash } from 'bcryptjs';
 import { Router, type Request } from 'express';
 
 import { Prisma } from '../generated/prisma/client.js';
@@ -8,15 +9,21 @@ export const usersRouter = Router();
 type CreateUserBody = {
   email?: unknown;
   name?: unknown;
+  password?: unknown;
 };
 
 type CreateUserRequest = Request<Record<string, never>, unknown, CreateUserBody>;
 
 usersRouter.post('/', async (req: CreateUserRequest, res) => {
-  const { email, name } = req.body ?? {};
+  const { email, name, password } = req.body ?? {};
 
   if (typeof email !== 'string' || email.trim().length === 0) {
     res.status(400).json({ message: 'Email обязателен' });
+    return;
+  }
+
+  if (typeof password !== 'string' || password.length < 8) {
+    res.status(400).json({ message: 'Пароль должен содержать минимум 8 символов' });
     return;
   }
 
@@ -28,9 +35,11 @@ usersRouter.post('/', async (req: CreateUserRequest, res) => {
   const trimmedName = typeof name === 'string' ? name.trim() : undefined;
 
   try {
+    const passwordHash = await hash(password, 12);
     const user = await prisma.user.create({
       data: {
         email: email.trim(),
+        passwordHash,
         ...(trimmedName ? { name: trimmedName } : {}),
       },
     });

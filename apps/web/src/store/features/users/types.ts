@@ -9,9 +9,13 @@ export interface User {
 export interface CreateUserBody {
   email: string;
   name?: string;
+  password: string;
 }
 
-export type UpdateUserBody = Partial<CreateUserBody>;
+export interface UpdateUserBody {
+  email?: string;
+  name?: string;
+}
 
 export interface UpdateUserRequest {
   id: number;

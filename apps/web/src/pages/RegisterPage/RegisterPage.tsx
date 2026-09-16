@@ -23,6 +23,7 @@ export const RegisterPage = () => {
   const [name, setName] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
+  const [password, setPassword] = useState('');
 
   const onSubmit: SubmitEventHandler<HTMLFormElement> = async (e) => {
     e.preventDefault();
@@ -36,18 +37,26 @@ export const RegisterPage = () => {
       return;
     }
 
+    if (password.length < 8) {
+      setErrorMessage('Пароль должен содержать минимум 8 символов');
+      setSuccessMessage('');
+      return;
+    }
+
     setErrorMessage('');
     setSuccessMessage('');
 
     try {
       const createdUser = await createUser({
         email: trimmedEmail,
+        password,
         ...(trimmedName ? { name: trimmedName } : {}),
       }).unwrap();
 
       setSuccessMessage(`Пользователь ${createdUser.email} создан`);
       setEmail('');
       setName('');
+      setPassword('');
     } catch (error) {
       setErrorMessage(getCreateUserErrorMessage(error));
     }
@@ -115,6 +124,20 @@ export const RegisterPage = () => {
                 type="email"
                 autoComplete="email"
                 disabled={isCreatingUser}
+                fullWidth
+                required
+              />
+
+              <TextField
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                label="Пароль"
+                name="password"
+                type="password"
+                autoComplete="new-password"
+                disabled={isCreatingUser}
+                helperText="Минимум 8 символов"
+                slotProps={{ htmlInput: { minLength: 8 } }}
                 fullWidth
                 required
               />

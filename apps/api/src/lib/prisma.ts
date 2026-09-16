@@ -7,4 +7,11 @@ import { PrismaClient } from '../generated/prisma/client.js';
 const databaseUrl = process.env.DATABASE_URL ?? 'file:./dev.db';
 const adapter = new PrismaBetterSqlite3({ url: databaseUrl });
 
-export const prisma = new PrismaClient({ adapter });
+export const prisma = new PrismaClient({
+  adapter,
+  omit: {
+    user: {
+      passwordHash: true,
+    },
+  },
+});

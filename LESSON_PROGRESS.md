@@ -1,6 +1,6 @@
 # Volex Lesson Progress
 
-Last updated: 2026-09-16
+Last updated: 2026-09-17
 
 ## How To Resume
 
@@ -17,9 +17,12 @@ The learning format should stay slow and practical:
 - explain what the code means before adding more code;
 - give a small task for the student to do by hand;
 - check the result after the student changes files;
+- the assistant must not write application code unless the student explicitly asks for implementation;
+- when continuing lessons, the student writes the code and the assistant explains, reviews, formats, and verifies;
 - the assistant should run Prettier automatically; do not make formatting-only fixes a student exercise;
 - do not run `lint`/`build` after every tiny TypeScript step unless the change is risky or the lesson is reaching a checkpoint;
-- avoid jumping ahead into auth, WebSocket, or production architecture too early.
+- avoid jumping ahead into WebSocket or production architecture too early;
+- auth is now the next learning topic, but keep it practical: cookie session first, JWT later.
 
 ## Project Path
 
@@ -57,8 +60,10 @@ Current frontend progress:
   - `/admin` renders `AdminPage`.
 - `LoginPage` is built with MUI components.
 - The login page has a link to `/register`.
-- `RegisterPage` is a controlled MUI form for `name` and `email`.
+- `RegisterPage` is a controlled MUI form for `name`, `email`, and `password`.
 - `RegisterPage` now creates users through RTK Query with `useCreateUserMutation()`.
+- `RegisterPage` validates a minimum password length of 8 characters and sends the password only in the create-user request.
+- `CreateUserBody` includes a required `password`; `UpdateUserBody` remains a separate type without password fields.
 - `RegisterPage` uses `getCreateUserErrorMessage(...)` to read backend error messages from RTK Query errors.
 - `AdminPage` reads users through RTK Query with `useGetUsersQuery()`.
 - `AdminPage` passes RTK Query options: `pollingInterval: 5000`, `refetchOnFocus: true`, and `refetchOnReconnect: true`.
@@ -74,18 +79,17 @@ Current frontend progress:
 - `AdminPage` sends an empty edit name as `undefined`, not as an empty string.
 - `AdminPage` shows update loading state through `isLoadingUpdate`.
 - `AdminPage` stores edit errors in `editUserErrorMessage` and reads backend messages through `getUpdateUserErrorMessage(...)`.
-- Current app code no longer imports the old manual `src/api` user layer; `rg` only finds `apiClient`/`usersApi` inside `src/api` itself.
+- Current app code no longer imports the old manual `src/api` user layer.
 - On 2026-09-16, the old manual `src/api` layer was reviewed again and then removed after confirming it was unused by app screens.
 - `TableUsers` has an edit icon button and accepts `onEditUser?: (user: User) => void`.
 - `TableUsers` does not call `useUpdateUserMutation` directly; it only reports which user was selected.
 - `ConfirmDialog` was added as a reusable confirmation dialog.
 - `TextFieldsDialog` was added as a reusable dialog that collects named text fields through `FormData`.
-- The frontend has a simple API layer in `src/api`.
 - RTK Query has started in `src/store/features/users`.
 - The `usersQuery` RTK Query API has `GET /users`, `POST /users`, `PATCH /users/:id`, and `DELETE /users/:id`.
 - The `updateUser` mutation is typed as `builder.mutation<User, UpdateUserRequest>(...)`, uses `method: 'PATCH'`, invalidates the changed user and the users list, and is exported as `useUpdateUserMutation`.
 - The `usersQuery.reducer` and `usersQuery.middleware` are connected in `src/store/index.ts`.
-- The old manual `src/api` layer still exists for comparison/cleanup, but `RegisterPage` no longer uses it.
+- The old manual `src/api` layer was removed after the user CRUD flows moved to RTK Query.
 - Vite dev server proxies `/api` requests to `http://localhost:4000`.
 - Prettier is installed in `apps/web`.
 
@@ -101,7 +105,7 @@ npm run format:check
 
 ### Frontend API Layer
 
-Current files:
+The old manual frontend API layer was removed:
 
 ```txt
 apps/web/src/api/client.ts
@@ -109,30 +113,11 @@ apps/web/src/api/users.ts
 apps/web/src/api/index.ts
 ```
 
-`client.ts` is the shared fetch wrapper.
-
-Available low-level methods:
+Current user CRUD requests live in RTK Query:
 
 ```txt
-apiClient.get(...)
-apiClient.post(...)
-apiClient.put(...)
-apiClient.patch(...)
-apiClient.delete(...)
-```
-
-`users.ts` is the user-specific API wrapper.
-
-This old manual API layer is currently kept as learning material and for a later cleanup step. New user reads/creates/deletes are being moved to RTK Query.
-
-Current user CRUD methods:
-
-```txt
-usersApi.getAll()
-usersApi.getById(id)
-usersApi.create(body)
-usersApi.update(id, body)
-usersApi.delete(id)
+apps/web/src/store/features/users/users.ts
+apps/web/src/store/features/users/types.ts
 ```
 
 Learned ideas:
@@ -158,12 +143,16 @@ Current backend stack:
 - TypeScript
 - Prisma 7
 - SQLite for local learning
+- `bcryptjs` for password hashing and comparison
+- `express-session` for server-side sessions and `httpOnly` cookies
 
 Important files:
 
 ```txt
 apps/api/src/index.ts
 apps/api/src/lib/prisma.ts
+apps/api/src/routes/auth.routes.ts
+apps/api/src/types/express-session.d.ts
 apps/api/prisma/schema.prisma
 apps/api/prisma7.config.ts
 apps/api/dev.db
@@ -173,11 +162,12 @@ Current Prisma model:
 
 ```prisma
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  name         String?
+  passwordHash String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 ```
 
@@ -246,7 +236,7 @@ Example request:
 ```bash
 curl -X POST http://localhost:4000/users \
   -H "Content-Type: application/json" \
-  -d '{"email":"test@example.com","name":"Aleksey"}'
+  -d '{"email":"test@example.com","name":"Aleksey","password":"password123"}'
 ```
 
 Learned ideas:
@@ -258,6 +248,9 @@ Prisma saves data into the database.
 @unique in Prisma schema creates a unique constraint in the database.
 Prisma error P2002 means a unique constraint failed.
 409 Conflict is a good status when email is already taken.
+Passwords must never be stored as plain text.
+`bcryptjs.hash(password, 12)` stores a salted password hash in `passwordHash`.
+The Prisma Client has a global `omit` rule that hides `passwordHash` from normal User query results.
 ```
 
 ### GET `/users`
@@ -297,6 +290,7 @@ Backend routes are now split into route modules:
 ```txt
 apps/api/src/routes/health.routes.ts
 apps/api/src/routes/users.routes.ts
+apps/api/src/routes/auth.routes.ts
 ```
 
 `src/index.ts` connects route modules:
@@ -304,6 +298,7 @@ apps/api/src/routes/users.routes.ts
 ```txt
 app.use(healthRouter)
 app.use('/users', usersRouter)
+app.use('/auth', authRouter)
 ```
 
 Learned ideas:
@@ -312,6 +307,28 @@ Learned ideas:
 Router() creates a small group of Express routes.
 app.use('/users', usersRouter) adds the /users prefix to routes inside usersRouter.
 usersRouter.get('/:id', ...) becomes GET /users/:id.
+```
+
+### POST `/auth/login`
+
+Checks an email and password with `bcryptjs.compare(...)`.
+
+Current state:
+
+```txt
+- unknown users and wrong passwords both return 401 with the same message;
+- the query locally overrides the global passwordHash omission so the hash can be checked;
+- successful responses explicitly contain only public user fields;
+- express-session middleware is connected and configured with an httpOnly cookie;
+- SESSION_SECRET is required and is configured locally;
+- session data is currently stored in MemoryStore, so restarting the API clears sessions.
+```
+
+Known bug to fix first on resume:
+
+```txt
+req.session.userId = user.id currently runs before the isPasswordValid check.
+Move it below the invalid-password return so a wrong password can never create a logged-in session.
 ```
 
 ### PATCH `/users/:id`
@@ -381,33 +398,62 @@ Prisma error P2025 also appears when the record to delete was not found.
 - `id: 'LIST'` is a local convention for tagging the whole users list, not a backend id.
 - `isLoading` means first load without data; `isFetching` means any in-flight request, including refetch/polling.
 - A temporary duplicate API layer can be helpful while learning, but later it becomes a maintenance risk because the same backend operation can be described in two places.
+- Authentication proves who the user is; authorization decides what that user may access.
+- Password hashing is one-way; login uses `compare(...)`, not decryption.
+- A salt is generated by bcrypt and stored as part of the hash.
+- A session keeps login state on the server; the browser receives only a signed session-id cookie.
+- `httpOnly` prevents page JavaScript from reading the session cookie.
+- `saveUninitialized: false` avoids creating sessions for anonymous requests that store no session data.
+- `resave: false` avoids saving unchanged sessions on every request.
+- Prisma schema changes, database migrations, and generated Prisma Client types are separate steps.
 
 ## Next Lesson
 
-Continue after removing the old manual frontend API layer.
+Continue the cookie-session authentication lesson without assistant-written app code.
 
-Suggested target:
+Current checkpoint:
 
 ```txt
-apps/web/src/store/
-apps/web/src/store/features/users/
-apps/web/src/main.tsx
-apps/web/src/pages/AdminPage/AdminPage.tsx
-apps/web/src/pages/AdminPage/TableUsers.tsx
-apps/web/src/pages/AdminPage/helpers/getUpdateUserErrorMessage.ts
-apps/web/src/pages/RegisterPage/RegisterPage.tsx
-apps/web/src/pages/RegisterPage/helpers/getCreateUserErrorMessage.ts
-apps/web/src/UI/dialogs/ConfirmDialog.tsx
-apps/web/src/UI/dialogs/TextFieldsDialog/
+- passwordHash exists in Prisma and the SQLite migration is applied;
+- registration hashes passwords with bcrypt cost 12;
+- passwordHash is globally omitted from normal Prisma User results;
+- the registration UI sends a password and was manually verified;
+- POST /auth/login finds a user and compares the password;
+- express-session middleware and the SessionData userId type are connected;
+- API and frontend checkpoint builds passed before the final session edit;
+- the API build also passes with express-session installed.
 ```
 
-Goals:
+First action on resume:
 
-- finish verification after removing the old manual `src/api` layer;
-- keep one frontend API approach for user CRUD: RTK Query in `src/store/features/users`;
-- explain that deleting unused old code reduces confusion and prevents duplicate API contracts from drifting apart;
-- then move to the next topic only after `lint` and `build` pass;
-- do not add login/auth/WebSocket yet.
+```txt
+In apps/api/src/routes/auth.routes.ts, move:
+
+req.session.userId = user.id;
+
+so it runs only after the `if (!isPasswordValid) { ... return; }` block.
+This is a security-critical ordering fix: a wrong password must never write userId into the session.
+Then format and rebuild the API.
+```
+
+Continue in this order:
+
+1. Fix the session assignment ordering bug and verify correct/wrong-password behavior.
+2. Add `GET /auth/me`, reading `req.session.userId` and returning the public user or `401`.
+3. Add `POST /auth/logout` using `req.session.destroy(...)` and clear the session cookie.
+4. Create `apps/web/src/store/features/auth/` with RTK Query endpoints for login, me, and logout.
+5. Connect `LoginPage` to the login mutation and redirect to `/messenger` after success.
+6. Create `ProtectedRoute` based on `GET /auth/me` and protect `/messenger`.
+7. Add logout UI and manually verify login, refresh restoration, protection, and logout.
+8. Only after the cookie-session flow works, start the separate JWT lesson.
+
+Teaching rules remain unchanged:
+
+- the student writes application code unless explicitly asking the assistant to implement;
+- use practical blocks rather than one-line microsteps;
+- explain before asking for changes;
+- inspect each student change and run Prettier automatically;
+- run lint/build at meaningful checkpoints.
 
 Completed:
 
@@ -495,13 +541,44 @@ Completed:
 - verified that `npm run format:check` passes;
 - verified that `npm run lint` passes;
 - verified that `npm run build` passes.
+- added nullable `passwordHash String?` to the Prisma `User` model so existing users remain valid;
+- created and applied migration `20260916221221_add_password_hash`;
+- regenerated Prisma Client after the schema change;
+- installed `bcryptjs` and explained hashing, salts, cost 12, and `compare(...)`;
+- added password validation and bcrypt hashing to `POST /users`;
+- configured global Prisma `omit` so `passwordHash` is hidden from normal User query results;
+- added a required password to the frontend create-user type and kept update-user fields separate;
+- added the controlled password field and validation to `RegisterPage`;
+- manually verified registration and confirmed that Studio stores a bcrypt hash rather than the plain password;
+- worked around the Prisma 7.10 Studio SQLite URL parsing bug with the `db:studio` npm script using an absolute `file://$PWD/dev.db` URL;
+- verified API build after password hashing changes;
+- verified frontend Prettier, lint, and build after registration password changes;
+- created `POST /auth/login` with identical `401` responses for unknown users and wrong passwords;
+- used a local Prisma omit override to read `passwordHash` only inside login;
+- explicitly returned public user fields from a successful login response;
+- installed `express-session` and `@types/express-session`;
+- added `SESSION_SECRET` to local environment configuration and `.env.example`;
+- added Express SessionData type augmentation with optional `userId`;
+- configured session middleware with `httpOnly`, `sameSite: 'lax'`, production-only `secure`, seven-day `maxAge`, `resave: false`, and `saveUninitialized: false`;
+- verified the API build after session middleware was added;
+- identified but intentionally left for the next lesson the security-critical session assignment ordering bug in `POST /auth/login`.
 
 Upcoming:
 
 - treat the RTK Query CRUD migration as complete;
-- next lesson can start with a calm review of polling versus real-time updates before choosing WebSocket or SSE;
+- first move `req.session.userId = user.id` below the invalid-password guard;
+- verify that a wrong password never creates a session and a correct password does;
+- implement `GET /auth/me` and `POST /auth/logout`;
+- create the frontend auth RTK Query feature;
+- connect login and redirect to `/messenger`;
+- protect `/messenger` with the `GET /auth/me` result;
+- add logout and verify that the protected route becomes unavailable;
+- continue using the basic `httpOnly` cookie-session flow before JWT;
+- JWT is planned as a follow-up lesson after the cookie-session flow works;
+- assistant must ask before implementing any application-code changes;
+- the student should continue writing auth code by hand;
 - keep direct dialog imports for now instead of adding a broad shared barrel export;
-- only after those simpler tools, return to real-time updates through WebSocket or SSE;
+- return to real-time updates through WebSocket or SSE after the auth lessons;
 - do not recreate `src/api` unless a new non-RTK Query API layer is intentionally introduced later.
 
 Important teaching note:
@@ -516,4 +593,11 @@ Current RTK Query order:
 3. POST /users
 4. DELETE /users/:id
 5. PATCH /users/:id - RTK Query endpoint and admin edit UI completed; reusable dialog pattern is next
+
+Current auth teaching direction:
+1. cookie-session login
+2. `GET /auth/me`
+3. protected `/messenger`
+4. redirect after login/logout
+5. JWT migration as the next auth level
 ```
