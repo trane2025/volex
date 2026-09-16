@@ -1,6 +1,6 @@
 # Volex Lesson Progress
 
-Last updated: 2026-09-15
+Last updated: 2026-09-16
 
 ## How To Resume
 
@@ -75,6 +75,7 @@ Current frontend progress:
 - `AdminPage` shows update loading state through `isLoadingUpdate`.
 - `AdminPage` stores edit errors in `editUserErrorMessage` and reads backend messages through `getUpdateUserErrorMessage(...)`.
 - Current app code no longer imports the old manual `src/api` user layer; `rg` only finds `apiClient`/`usersApi` inside `src/api` itself.
+- On 2026-09-16, the old manual `src/api` layer was reviewed again and then removed after confirming it was unused by app screens.
 - `TableUsers` has an edit icon button and accepts `onEditUser?: (user: User) => void`.
 - `TableUsers` does not call `useUpdateUserMutation` directly; it only reports which user was selected.
 - `ConfirmDialog` was added as a reusable confirmation dialog.
@@ -379,10 +380,11 @@ Prisma error P2025 also appears when the record to delete was not found.
 - `invalidatesTags` marks cache tags stale after a mutation so active queries can refetch.
 - `id: 'LIST'` is a local convention for tagging the whole users list, not a backend id.
 - `isLoading` means first load without data; `isFetching` means any in-flight request, including refetch/polling.
+- A temporary duplicate API layer can be helpful while learning, but later it becomes a maintenance risk because the same backend operation can be described in two places.
 
 ## Next Lesson
 
-Continue Redux Toolkit and RTK Query CRUD.
+Continue after removing the old manual frontend API layer.
 
 Suggested target:
 
@@ -401,10 +403,10 @@ apps/web/src/UI/dialogs/TextFieldsDialog/
 
 Goals:
 
-- review the old manual `src/api` layer now that user read/create/update/delete flows use RTK Query;
-- decide whether to keep `src/api` temporarily as learning material or remove unused manual user API code;
-- explain why duplicate API layers are useful while learning but risky once the app grows;
-- if removing, delete only unused manual API files after confirming no imports remain;
+- finish verification after removing the old manual `src/api` layer;
+- keep one frontend API approach for user CRUD: RTK Query in `src/store/features/users`;
+- explain that deleting unused old code reduces confusion and prevents duplicate API contracts from drifting apart;
+- then move to the next topic only after `lint` and `build` pass;
 - do not add login/auth/WebSocket yet.
 
 Completed:
@@ -481,19 +483,26 @@ Completed:
 - ran `npm run format` after changing empty edit names to `undefined`;
 - verified that `npm run build` passes after changing empty edit names to `undefined`;
 - checked old manual API usage with `rg`; no app imports remain outside `src/api` itself;
+- reviewed `src/api/client.ts`, `src/api/users.ts`, and `src/api/index.ts` after the RTK Query CRUD migration;
+- confirmed that the manual `usersApi` still mirrors user CRUD operations but is not currently used by app screens;
+- explained the cleanup checkpoint: keep it for comparison while learning, or remove it to avoid two API layers drifting apart;
+- user removed `apps/web/src/api/client.ts`, `apps/web/src/api/users.ts`, and `apps/web/src/api/index.ts`;
+- confirmed with `rg` that no frontend imports or references remain for `usersApi`, `apiClient`, `ApiError`, or `../../api`;
+- ran Prettier on `LESSON_PROGRESS.md` after documenting the cleanup; the file was already formatted;
+- verified that `npm run format:check` passes after deleting the old manual frontend API layer;
+- verified that `npm run lint` passes after deleting the old manual frontend API layer;
+- verified that `npm run build` passes after deleting the old manual frontend API layer;
 - verified that `npm run format:check` passes;
 - verified that `npm run lint` passes;
 - verified that `npm run build` passes.
 
 Upcoming:
 
-- continue by reviewing the old manual `src/api` layer;
-- check imports to confirm whether `src/api/users.ts` and `src/api/client.ts` are still used;
-- discuss cleanup before deleting anything;
+- treat the RTK Query CRUD migration as complete;
+- next lesson can start with a calm review of polling versus real-time updates before choosing WebSocket or SSE;
 - keep direct dialog imports for now instead of adding a broad shared barrel export;
-- after RTK Query CRUD basics, discuss whether the old manual `src/api` layer should stay or be removed;
 - only after those simpler tools, return to real-time updates through WebSocket or SSE;
-- do not delete `src/api` automatically; discuss cleanup first.
+- do not recreate `src/api` unless a new non-RTK Query API layer is intentionally introduced later.
 
 Important teaching note:
 
