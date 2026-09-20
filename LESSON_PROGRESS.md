@@ -1,6 +1,6 @@
 # Volex Lesson Progress
 
-Last updated: 2026-09-17
+Last updated: 2026-09-21
 
 ## How To Resume
 
@@ -60,6 +60,9 @@ Current frontend progress:
   - `/admin` renders `AdminPage`.
 - `LoginPage` is built with MUI components.
 - The login page has a link to `/register`.
+- `LoginPage` is now a controlled login form for `email` and `password`.
+- `LoginPage` uses `useLoginMutation()` from the auth RTK Query feature.
+- `LoginPage` prevents default browser form submission, calls `POST /auth/login`, shows backend error messages, and redirects to `/messenger` after a successful login.
 - `RegisterPage` is a controlled MUI form for `name`, `email`, and `password`.
 - `RegisterPage` now creates users through RTK Query with `useCreateUserMutation()`.
 - `RegisterPage` validates a minimum password length of 8 characters and sends the password only in the create-user request.
@@ -89,6 +92,10 @@ Current frontend progress:
 - The `usersQuery` RTK Query API has `GET /users`, `POST /users`, `PATCH /users/:id`, and `DELETE /users/:id`.
 - The `updateUser` mutation is typed as `builder.mutation<User, UpdateUserRequest>(...)`, uses `method: 'PATCH'`, invalidates the changed user and the users list, and is exported as `useUpdateUserMutation`.
 - The `usersQuery.reducer` and `usersQuery.middleware` are connected in `src/store/index.ts`.
+- RTK Query auth requests live in `src/store/features/auth`.
+- The `authQuery` API has `POST /auth/login`, `GET /auth/me`, and `POST /auth/logout`.
+- The auth RTK Query base query uses `credentials: 'include'` so browser cookies are sent with auth requests.
+- The `authQuery.reducer` and `authQuery.middleware` are connected in `src/store/index.ts`.
 - The old manual `src/api` layer was removed after the user CRUD flows moved to RTK Query.
 - Vite dev server proxies `/api` requests to `http://localhost:4000`.
 - Prettier is installed in `apps/web`.
@@ -324,11 +331,13 @@ Current state:
 - session data is currently stored in MemoryStore, so restarting the API clears sessions.
 ```
 
-Known bug to fix first on resume:
+The cookie-session backend flow is now implemented:
 
 ```txt
-req.session.userId = user.id currently runs before the isPasswordValid check.
-Move it below the invalid-password return so a wrong password can never create a logged-in session.
+- req.session.userId is assigned only after the password is validated;
+- GET /auth/me reads userId from the session and returns the current user or 401;
+- POST /auth/logout destroys the session and returns 204;
+- API formatting and TypeScript build pass.
 ```
 
 ### PATCH `/users/:id`
@@ -420,32 +429,30 @@ Current checkpoint:
 - the registration UI sends a password and was manually verified;
 - POST /auth/login finds a user and compares the password;
 - express-session middleware and the SessionData userId type are connected;
-- API and frontend checkpoint builds passed before the final session edit;
-- the API build also passes with express-session installed.
+- wrong passwords no longer write userId into the session;
+- GET /auth/me returns the session user or 401;
+- POST /auth/logout destroys the session and returns 204;
+- API formatting and build pass after completing the backend session routes;
+- frontend auth RTK Query feature is created and connected to the Redux store;
+- LoginPage calls the login mutation, prevents native GET form submission, shows errors, and redirects to /messenger after success;
+- frontend formatting, lint, and build pass after connecting LoginPage;
+- the automated HTTP chain could not be completed because isolated command processes could not connect to the locally started port, although the API started successfully.
 ```
 
 First action on resume:
 
 ```txt
-In apps/api/src/routes/auth.routes.ts, move:
-
-req.session.userId = user.id;
-
-so it runs only after the `if (!isPasswordValid) { ... return; }` block.
-This is a security-critical ordering fix: a wrong password must never write userId into the session.
-Then format and rebuild the API.
+Create a ProtectedRoute component based on useGetMeQuery().
+It should show a loading state while /auth/me is loading, redirect unauthorized users
+to /login, and render the protected page when a user exists.
+Then protect /messenger in apps/web/src/App.tsx.
 ```
 
 Continue in this order:
 
-1. Fix the session assignment ordering bug and verify correct/wrong-password behavior.
-2. Add `GET /auth/me`, reading `req.session.userId` and returning the public user or `401`.
-3. Add `POST /auth/logout` using `req.session.destroy(...)` and clear the session cookie.
-4. Create `apps/web/src/store/features/auth/` with RTK Query endpoints for login, me, and logout.
-5. Connect `LoginPage` to the login mutation and redirect to `/messenger` after success.
-6. Create `ProtectedRoute` based on `GET /auth/me` and protect `/messenger`.
-7. Add logout UI and manually verify login, refresh restoration, protection, and logout.
-8. Only after the cookie-session flow works, start the separate JWT lesson.
+1. Create `ProtectedRoute` based on `GET /auth/me` and protect `/messenger`.
+2. Add logout UI and manually verify login, refresh restoration, protection, and logout.
+3. Only after the cookie-session flow works, start the separate JWT lesson.
 
 Teaching rules remain unchanged:
 
@@ -561,16 +568,21 @@ Completed:
 - added Express SessionData type augmentation with optional `userId`;
 - configured session middleware with `httpOnly`, `sameSite: 'lax'`, production-only `secure`, seven-day `maxAge`, `resave: false`, and `saveUninitialized: false`;
 - verified the API build after session middleware was added;
-- identified but intentionally left for the next lesson the security-critical session assignment ordering bug in `POST /auth/login`.
+- fixed the security-critical ordering bug so `POST /auth/login` writes `userId` only after a valid password;
+- added `GET /auth/me` to restore the current user from the server-side session;
+- added `POST /auth/logout` using `req.session.destroy(...)`;
+- ran API Prettier and verified that the API TypeScript build passes after completing the session routes.
+- created `apps/web/src/store/features/auth/` with `LoginBody`, `authQuery`, and hooks for login, me, and logout;
+- connected `authQuery.reducer` and `authQuery.middleware` in the frontend Redux store;
+- added `credentials: 'include'` to the auth base query so session cookies are sent;
+- connected `LoginPage` to `useLoginMutation()` with controlled email/password state;
+- added `getLoginErrorMessage(...)` for RTK Query login errors;
+- fixed a nested form issue in `LoginPage` that caused the browser to submit fields as a native GET query string;
+- verified frontend Prettier, lint, and build after connecting login.
 
 Upcoming:
 
 - treat the RTK Query CRUD migration as complete;
-- first move `req.session.userId = user.id` below the invalid-password guard;
-- verify that a wrong password never creates a session and a correct password does;
-- implement `GET /auth/me` and `POST /auth/logout`;
-- create the frontend auth RTK Query feature;
-- connect login and redirect to `/messenger`;
 - protect `/messenger` with the `GET /auth/me` result;
 - add logout and verify that the protected route becomes unavailable;
 - continue using the basic `httpOnly` cookie-session flow before JWT;

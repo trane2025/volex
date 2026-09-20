@@ -1,6 +1,7 @@
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import LoginRoundedIcon from '@mui/icons-material/LoginRounded';
 import {
+  Alert,
   Avatar,
   Box,
   Button,
@@ -13,9 +14,43 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { useLoginMutation } from '../../store/features/auth';
+import { type SubmitEventHandler, useState } from 'react';
+import { getLoginErrorMessage } from './getLoginErrorMessage.ts';
 
 export const LoginPage = () => {
+  const navigate = useNavigate();
+
+  const [login, { isLoading }] = useLoginMutation();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const onSubmit: SubmitEventHandler<HTMLFormElement> = async (event) => {
+    event.preventDefault();
+
+    const trimmedEmail = email.trim();
+
+    if (!trimmedEmail || !password) {
+      setErrorMessage('Введите email и пароль');
+      return;
+    }
+
+    setErrorMessage('');
+
+    try {
+      await login({
+        email: trimmedEmail,
+        password: password,
+      }).unwrap();
+
+      navigate('/messenger', { replace: true });
+    } catch (err) {
+      setErrorMessage(getLoginErrorMessage(err));
+    }
+  };
+
   return (
     <Box
       sx={{
@@ -54,14 +89,15 @@ export const LoginPage = () => {
               </Box>
             </Stack>
 
-            <Box
-              component="form"
-              onSubmit={(event) => {
-                event.preventDefault();
-              }}
-            >
+            <Box component="form" onSubmit={onSubmit}>
+              {errorMessage ? (
+                <Alert sx={{ marginBottom: 3 }} severity="error">
+                  {errorMessage}
+                </Alert>
+              ) : null}
               <Stack spacing={2.5}>
                 <TextField
+                  onChange={(event) => setEmail(event.target.value)}
                   label="Email"
                   name="email"
                   type="email"
@@ -71,6 +107,7 @@ export const LoginPage = () => {
                 />
 
                 <TextField
+                  onChange={(event) => setPassword(event.target.value)}
                   label="Пароль"
                   name="password"
                   type="password"
@@ -82,6 +119,7 @@ export const LoginPage = () => {
                 <FormControlLabel control={<Checkbox name="remember" />} label="Запомнить меня" />
 
                 <Button
+                  loading={isLoading}
                   type="submit"
                   variant="contained"
                   size="large"
