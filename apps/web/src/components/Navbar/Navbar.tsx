@@ -1,9 +1,11 @@
 import AdminPanelSettingsRoundedIcon from '@mui/icons-material/AdminPanelSettingsRounded';
+import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import DarkModeRoundedIcon from '@mui/icons-material/DarkModeRounded';
 import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded';
 import { Box, IconButton, Tooltip } from '@mui/material';
 import type { PaletteMode } from '@mui/material/styles';
-import { Link as RouterLink, useLocation } from 'react-router-dom';
+import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
+import { useGetMeQuery, useLogoutMutation } from '../../store/features/auth';
 
 interface NavbarProps {
   colorMode: PaletteMode;
@@ -15,6 +17,15 @@ export const Navbar = ({ colorMode, onToggleColorMode }: NavbarProps) => {
   const isDarkMode = colorMode === 'dark';
   const isAdminPage = pathname === '/admin';
   const toggleLabel = isDarkMode ? 'Включить светлую тему' : 'Включить черную тему';
+
+  const navigate = useNavigate();
+  const { data: user } = useGetMeQuery();
+  const [logout, { isLoading: isLoadingOut }] = useLogoutMutation();
+
+  const handleLogout = async () => {
+    await logout().unwrap();
+    navigate('/login', { replace: true });
+  };
 
   return (
     <Box
@@ -31,29 +42,53 @@ export const Navbar = ({ colorMode, onToggleColorMode }: NavbarProps) => {
         pointerEvents: 'none',
       }}
     >
-      <Tooltip title="Открыть админку">
-        <IconButton
-          aria-label="Открыть админку"
-          color={isAdminPage ? 'primary' : 'inherit'}
-          component={RouterLink}
-          to="/admin"
-          sx={{
-            width: 44,
-            height: 44,
-            border: '1px solid',
-            borderColor: isAdminPage ? 'primary.main' : 'divider',
-            bgcolor: 'background.paper',
-            boxShadow: 2,
-            pointerEvents: 'auto',
-            '&:hover': {
-              bgcolor: 'action.hover',
-            },
-          }}
-        >
-          <AdminPanelSettingsRoundedIcon />
-        </IconButton>
-      </Tooltip>
-
+      <Box sx={{ display: 'flex', gap: 1 }}>
+        {user ? (
+          <Tooltip title="Выйти">
+            <IconButton
+              aria-label="Выйти"
+              disabled={isLoadingOut}
+              onClick={handleLogout}
+              sx={{
+                width: 44,
+                height: 44,
+                border: '1px solid',
+                borderColor: 'divider',
+                bgcolor: 'background.paper',
+                boxShadow: 2,
+                pointerEvents: 'auto',
+                '&:hover': {
+                  bgcolor: 'action.hover',
+                },
+              }}
+            >
+              <LogoutRoundedIcon />
+            </IconButton>
+          </Tooltip>
+        ) : null}
+        <Tooltip title="Открыть админку">
+          <IconButton
+            aria-label="Открыть админку"
+            color={isAdminPage ? 'primary' : 'inherit'}
+            component={RouterLink}
+            to="/admin"
+            sx={{
+              width: 44,
+              height: 44,
+              border: '1px solid',
+              borderColor: isAdminPage ? 'primary.main' : 'divider',
+              bgcolor: 'background.paper',
+              boxShadow: 2,
+              pointerEvents: 'auto',
+              '&:hover': {
+                bgcolor: 'action.hover',
+              },
+            }}
+          >
+            <AdminPanelSettingsRoundedIcon />
+          </IconButton>
+        </Tooltip>
+      </Box>
       <Tooltip title={toggleLabel}>
         <IconButton
           aria-label={toggleLabel}

@@ -4,6 +4,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react
 import { Layout } from './Layout.tsx';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { createVolexTheme } from './theme.ts';
+import { ProtectedRoute } from './components/ProtectedRoute';
 
 const COLOR_MODE_STORAGE_KEY = 'volex-color-mode';
 
@@ -68,7 +69,14 @@ export const App = () => {
               <Route path="/" element={<Navigate to="/login" replace />} />
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
-              <Route path="/messenger" element={<MessengerPage />} />
+              <Route
+                path="/messenger"
+                element={
+                  <ProtectedRoute>
+                    <MessengerPage />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/admin" element={<AdminPage />} />
             </Routes>
           </Suspense>

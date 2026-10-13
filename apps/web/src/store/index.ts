@@ -1,11 +1,8 @@
-import { combineReducers, configureStore } from '@reduxjs/toolkit';
+import { configureStore, combineSlices } from '@reduxjs/toolkit';
 import { usersQuery } from './features/users';
 import { authQuery } from './features/auth';
 
-const rootReducer = combineReducers({
-  [usersQuery.reducerPath]: usersQuery.reducer,
-  [authQuery.reducerPath]: authQuery.reducer,
-});
+const rootReducer = combineSlices(usersQuery, authQuery);
 
 export const setupStore = () => {
   return configureStore({
