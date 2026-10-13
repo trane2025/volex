@@ -1,6 +1,6 @@
 # Volex Lesson Progress
 
-Last updated: 2026-09-21
+Last updated: 2026-10-13
 
 ## How To Resume
 
@@ -10,13 +10,14 @@ In a new chat, say:
 Продолжаем урок Volex. Прочитай LESSON_PROGRESS.md и продолжи с раздела "Next Lesson".
 ```
 
-The learning format should stay slow and practical:
+The learning format should stay practical, but use larger task blocks now:
 
-- one small concept at a time;
-- use slightly larger practical blocks when the student asks for more pace;
+- one practical concept at a time;
+- prefer larger lesson blocks: explain the idea briefly, then give 3-5 related tasks;
+- avoid spending too much context on tiny one-line changes unless the concept is genuinely new or risky;
 - explain what the code means before adding more code;
-- give a small task for the student to do by hand;
-- check the result after the student changes files;
+- give a compact task block for the student to do by hand;
+- check the result after the student finishes the whole block;
 - the assistant must not write application code unless the student explicitly asks for implementation;
 - when continuing lessons, the student writes the code and the assistant explains, reviews, formats, and verifies;
 - the assistant should run Prettier automatically; do not make formatting-only fixes a student exercise;
@@ -56,8 +57,8 @@ Current frontend progress:
   - `/` redirects to `/login`;
   - `/login` renders `LoginPage`;
   - `/register` renders `RegisterPage`;
-  - `/messenger` renders `MessengerPage`.
-  - `/admin` renders `AdminPage`.
+  - `/messenger` is wrapped in `ProtectedRoute` and renders `MessengerPage` for authenticated users;
+  - `/admin` is wrapped in `ProtectedRoute` and renders `AdminPage` for authenticated users.
 - `LoginPage` is built with MUI components.
 - The login page has a link to `/register`.
 - `LoginPage` is now a controlled login form for `email` and `password`.
@@ -96,6 +97,9 @@ Current frontend progress:
 - The `authQuery` API has `POST /auth/login`, `GET /auth/me`, and `POST /auth/logout`.
 - The auth RTK Query base query uses `credentials: 'include'` so browser cookies are sent with auth requests.
 - The `authQuery.reducer` and `authQuery.middleware` are connected in `src/store/index.ts`.
+- `ProtectedRoute` uses `useGetMeQuery()` to check the current cookie-session user before rendering protected pages.
+- `/messenger` and `/admin` are now protected by `ProtectedRoute`.
+- `Navbar` shows a logout button when `GET /auth/me` has a user and calls `POST /auth/logout`.
 - The old manual `src/api` layer was removed after the user CRUD flows moved to RTK Query.
 - Vite dev server proxies `/api` requests to `http://localhost:4000`.
 - Prettier is installed in `apps/web`.
@@ -418,7 +422,9 @@ Prisma error P2025 also appears when the record to delete was not found.
 
 ## Next Lesson
 
-Continue the cookie-session authentication lesson without assistant-written app code.
+Continue the authentication lesson without assistant-written app code.
+
+The student asked for a faster lesson format with larger task blocks. Avoid one-line microtasks when a larger practical block would be clearer.
 
 Current checkpoint:
 
@@ -436,23 +442,29 @@ Current checkpoint:
 - frontend auth RTK Query feature is created and connected to the Redux store;
 - LoginPage calls the login mutation, prevents native GET form submission, shows errors, and redirects to /messenger after success;
 - frontend formatting, lint, and build pass after connecting LoginPage;
+- `ProtectedRoute` has been created from `useGetMeQuery()`;
+- `/messenger` is protected by `ProtectedRoute`;
+- logout UI has been added to `Navbar`;
+- the auth RTK Query cache uses an `Auth` tag so login/logout can refresh `GET /auth/me`;
+- the student has just wrapped `/admin` in `ProtectedRoute`;
+- the `/admin` protection change still needs assistant review, Prettier, and a meaningful build/checkpoint verification in the next session;
 - the automated HTTP chain could not be completed because isolated command processes could not connect to the locally started port, although the API started successfully.
 ```
 
 First action on resume:
 
 ```txt
-Create a ProtectedRoute component based on useGetMeQuery().
-It should show a loading state while /auth/me is loading, redirect unauthorized users
-to /login, and render the protected page when a user exists.
-Then protect /messenger in apps/web/src/App.tsx.
+Review the student's /admin ProtectedRoute change in apps/web/src/App.tsx.
+Run Prettier and a meaningful frontend checkpoint check.
+Then continue to the next auth concept: authorization with user roles.
 ```
 
 Continue in this order:
 
-1. Create `ProtectedRoute` based on `GET /auth/me` and protect `/messenger`.
-2. Add logout UI and manually verify login, refresh restoration, protection, and logout.
-3. Only after the cookie-session flow works, start the separate JWT lesson.
+1. Verify the completed cookie-session route protection block: `/messenger`, `/admin`, refresh restoration, and logout.
+2. Explain authentication vs authorization using the current app: "logged in" is not the same as "admin".
+3. Start the roles block in larger practical steps: add a user role to the backend data model, expose it safely, and then protect `/admin` by role.
+4. Only after cookie-session plus role authorization works, start the separate JWT lesson.
 
 Teaching rules remain unchanged:
 
@@ -583,8 +595,8 @@ Completed:
 Upcoming:
 
 - treat the RTK Query CRUD migration as complete;
-- protect `/messenger` with the `GET /auth/me` result;
-- add logout and verify that the protected route becomes unavailable;
+- review and verify the student's `/admin` ProtectedRoute change;
+- add role-based authorization so `/admin` is available only to admin users;
 - continue using the basic `httpOnly` cookie-session flow before JWT;
 - JWT is planned as a follow-up lesson after the cookie-session flow works;
 - assistant must ask before implementing any application-code changes;
@@ -596,7 +608,8 @@ Upcoming:
 Important teaching note:
 
 ```txt
-The student asked to do slightly larger lesson blocks than one-line microsteps.
+The student asked to do larger lesson blocks than one-line microsteps.
+Use compact 3-5 task blocks, then review the whole result.
 Still keep each block practical and explain the concept before asking for changes.
 
 Current RTK Query order:
@@ -609,7 +622,8 @@ Current RTK Query order:
 Current auth teaching direction:
 1. cookie-session login
 2. `GET /auth/me`
-3. protected `/messenger`
+3. protected `/messenger` and `/admin` for authenticated users
 4. redirect after login/logout
-5. JWT migration as the next auth level
+5. role-based authorization for `/admin`
+6. JWT migration as the next auth level
 ```
