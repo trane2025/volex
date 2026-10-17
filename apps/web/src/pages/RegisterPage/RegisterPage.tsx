@@ -1,7 +1,6 @@
-import PersonAddAltRoundedIcon from '@mui/icons-material/PersonAddAltRounded';
+import { AppIcon } from '../../UI/icons/AppIcon';
+import { IconBadge } from '../../UI/icons/IconBadge';
 import {
-  Alert,
-  Avatar,
   Box,
   Button,
   Container,
@@ -15,6 +14,7 @@ import { Link as RouterLink } from 'react-router-dom';
 import { type SubmitEventHandler, useState } from 'react';
 import { useCreateUserMutation } from '../../store/features/users';
 import { getCreateUserErrorMessage } from './helpers/getCreateUserErrorMessage.ts';
+import { MessageAlert } from '../../UI/alerts/MessageAlert';
 
 export const RegisterPage = () => {
   const [createUser, { isLoading: isCreatingUser }] = useCreateUserMutation();
@@ -88,9 +88,7 @@ export const RegisterPage = () => {
         >
           <Stack spacing={3}>
             <Stack spacing={1.5} sx={{ alignItems: 'center' }}>
-              <Avatar sx={{ bgcolor: 'primary.main' }}>
-                <PersonAddAltRoundedIcon />
-              </Avatar>
+              <IconBadge name="register" />
 
               <Box sx={{ textAlign: 'center' }}>
                 <Typography component="h1" variant="h5" sx={{ fontWeight: 700 }}>
@@ -103,8 +101,8 @@ export const RegisterPage = () => {
             </Stack>
 
             <Stack spacing={2.5}>
-              {errorMessage ? <Alert severity="error">{errorMessage}</Alert> : null}
-              {successMessage ? <Alert severity="success">{successMessage}</Alert> : null}
+              <MessageAlert message={errorMessage} />
+              <MessageAlert message={successMessage} severity="success" />
 
               <TextField
                 value={name}
@@ -147,7 +145,7 @@ export const RegisterPage = () => {
                 variant="contained"
                 size="large"
                 disabled={isCreatingUser}
-                startIcon={<PersonAddAltRoundedIcon />}
+                startIcon={<AppIcon name="register" />}
               >
                 {isCreatingUser ? 'Создаем...' : 'Зарегистрироваться'}
               </Button>

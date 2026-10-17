@@ -1,15 +1,5 @@
-import DeleteRoundedIcon from '@mui/icons-material/DeleteRounded';
-import EditRoundedIcon from '@mui/icons-material/EditRounded';
-import {
-  IconButton,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Tooltip,
-} from '@mui/material';
+import { IconAction } from '../../UI/icons/IconAction';
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
 import type { User } from '../../store/features/users/types.ts';
 
 interface TableUsersProps {
@@ -55,26 +45,20 @@ export const TableUsers = ({ users, onDeleteUser, onEditUser }: TableUsersProps)
               <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDateTime(user.createdAt)}</TableCell>
               <TableCell sx={{ whiteSpace: 'nowrap' }}>{formatDateTime(user.updatedAt)}</TableCell>
               <TableCell align="right" sx={{ whiteSpace: 'nowrap' }}>
-                <Tooltip title="Редактировать пользователя">
-                  <IconButton
-                    aria-label={`Редактировать пользователя ${user.email}`}
-                    color="primary"
-                    onClick={() => onEditUser?.(user)}
-                    size="small"
-                  >
-                    <EditRoundedIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Удалить пользователя">
-                  <IconButton
-                    aria-label={`Удалить пользователя ${user.email}`}
-                    color="error"
-                    onClick={() => onDeleteUser?.(user)}
-                    size="small"
-                  >
-                    <DeleteRoundedIcon fontSize="small" />
-                  </IconButton>
-                </Tooltip>
+                <IconAction
+                  icon="edit"
+                  label="Редактировать пользователя"
+                  ariaLabel={`Редактировать пользователя ${user.email}`}
+                  color="primary"
+                  onClick={() => onEditUser?.(user)}
+                />
+                <IconAction
+                  icon="delete"
+                  label="Удалить пользователя"
+                  ariaLabel={`Удалить пользователя ${user.email}`}
+                  color="error"
+                  onClick={() => onDeleteUser?.(user)}
+                />
               </TableCell>
             </TableRow>
           ))}

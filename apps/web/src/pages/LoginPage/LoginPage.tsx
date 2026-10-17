@@ -1,8 +1,6 @@
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import LoginRoundedIcon from '@mui/icons-material/LoginRounded';
+import { AppIcon } from '../../UI/icons/AppIcon';
+import { IconBadge } from '../../UI/icons/IconBadge';
 import {
-  Alert,
-  Avatar,
   Box,
   Button,
   Checkbox,
@@ -18,6 +16,7 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useLoginMutation } from '../../store/features/auth';
 import { type SubmitEventHandler, useState } from 'react';
 import { getLoginErrorMessage } from './getLoginErrorMessage.ts';
+import { MessageAlert } from '../../UI/alerts/MessageAlert';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
@@ -75,9 +74,7 @@ export const LoginPage = () => {
         >
           <Stack spacing={3}>
             <Stack spacing={1.5} sx={{ alignItems: 'center' }}>
-              <Avatar sx={{ bgcolor: 'primary.main' }}>
-                <LockOutlinedIcon />
-              </Avatar>
+              <IconBadge name="lock" />
 
               <Box sx={{ textAlign: 'center' }}>
                 <Typography component="h1" variant="h5" sx={{ fontWeight: 700 }}>
@@ -90,11 +87,7 @@ export const LoginPage = () => {
             </Stack>
 
             <Box component="form" onSubmit={onSubmit}>
-              {errorMessage ? (
-                <Alert sx={{ marginBottom: 3 }} severity="error">
-                  {errorMessage}
-                </Alert>
-              ) : null}
+              <MessageAlert message={errorMessage} placement="form" />
               <Stack spacing={2.5}>
                 <TextField
                   onChange={(event) => setEmail(event.target.value)}
@@ -123,7 +116,7 @@ export const LoginPage = () => {
                   type="submit"
                   variant="contained"
                   size="large"
-                  startIcon={<LoginRoundedIcon />}
+                  startIcon={<AppIcon name="login" />}
                 >
                   Войти
                 </Button>

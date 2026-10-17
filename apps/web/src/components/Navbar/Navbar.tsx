@@ -1,11 +1,13 @@
-import AdminPanelSettingsRoundedIcon from '@mui/icons-material/AdminPanelSettingsRounded';
-import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
-import DarkModeRoundedIcon from '@mui/icons-material/DarkModeRounded';
-import LightModeRoundedIcon from '@mui/icons-material/LightModeRounded';
-import { Box, IconButton, Tooltip } from '@mui/material';
+import { IconAction } from '../../UI/icons/IconAction';
+import { Box } from '@mui/material';
 import type { PaletteMode } from '@mui/material/styles';
-import { Link as RouterLink, useLocation, useNavigate } from 'react-router-dom';
-import { useGetMeQuery, useLogoutMutation } from '../../store/features/auth';
+import { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { useLocation, useNavigate } from 'react-router-dom';
+import type { AppDispatch } from '../../store';
+import { authQuery, useGetMeQuery, useLogoutMutation } from '../../store/features/auth';
+import { usersQuery } from '../../store/features/users';
+import { MessageAlert } from '../../UI/alerts/MessageAlert';
 
 interface NavbarProps {
   colorMode: PaletteMode;
@@ -19,12 +21,22 @@ export const Navbar = ({ colorMode, onToggleColorMode }: NavbarProps) => {
   const toggleLabel = isDarkMode ? 'Включить светлую тему' : 'Включить черную тему';
 
   const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>();
+  const [logoutError, setLogoutError] = useState('');
   const { data: user } = useGetMeQuery();
   const [logout, { isLoading: isLoadingOut }] = useLogoutMutation();
 
   const handleLogout = async () => {
-    await logout().unwrap();
-    navigate('/login', { replace: true });
+    setLogoutError('');
+
+    try {
+      await logout().unwrap();
+      dispatch(usersQuery.util.resetApiState());
+      dispatch(authQuery.util.resetApiState());
+      navigate('/login', { replace: true });
+    } catch {
+      setLogoutError('Не удалось выйти. Попробуйте ещё раз');
+    }
   };
 
   return (
@@ -42,76 +54,33 @@ export const Navbar = ({ colorMode, onToggleColorMode }: NavbarProps) => {
         pointerEvents: 'none',
       }}
     >
+      <MessageAlert message={logoutError} placement="header" />
       <Box sx={{ display: 'flex', gap: 1 }}>
         {user ? (
-          <Tooltip title="Выйти">
-            <IconButton
-              aria-label="Выйти"
-              disabled={isLoadingOut}
-              onClick={handleLogout}
-              sx={{
-                width: 44,
-                height: 44,
-                border: '1px solid',
-                borderColor: 'divider',
-                bgcolor: 'background.paper',
-                boxShadow: 2,
-                pointerEvents: 'auto',
-                '&:hover': {
-                  bgcolor: 'action.hover',
-                },
-              }}
-            >
-              <LogoutRoundedIcon />
-            </IconButton>
-          </Tooltip>
+          <IconAction
+            icon="logout"
+            label="Выйти"
+            variant="header"
+            disabled={isLoadingOut}
+            onClick={handleLogout}
+          />
         ) : null}
         {user?.role === 'ADMIN' ? (
-          <Tooltip title="Открыть админку">
-            <IconButton
-              aria-label="Открыть админку"
-              color={isAdminPage ? 'primary' : 'inherit'}
-              component={RouterLink}
-              to="/admin"
-              sx={{
-                width: 44,
-                height: 44,
-                border: '1px solid',
-                borderColor: isAdminPage ? 'primary.main' : 'divider',
-                bgcolor: 'background.paper',
-                boxShadow: 2,
-                pointerEvents: 'auto',
-                '&:hover': {
-                  bgcolor: 'action.hover',
-                },
-              }}
-            >
-              <AdminPanelSettingsRoundedIcon />
-            </IconButton>
-          </Tooltip>
+          <IconAction
+            icon="admin"
+            label="Открыть админку"
+            variant="header"
+            active={isAdminPage}
+            to="/admin"
+          />
         ) : null}
       </Box>
-      <Tooltip title={toggleLabel}>
-        <IconButton
-          aria-label={toggleLabel}
-          color="inherit"
-          onClick={onToggleColorMode}
-          sx={{
-            width: 44,
-            height: 44,
-            border: '1px solid',
-            borderColor: 'divider',
-            bgcolor: 'background.paper',
-            boxShadow: 2,
-            pointerEvents: 'auto',
-            '&:hover': {
-              bgcolor: 'action.hover',
-            },
-          }}
-        >
-          {isDarkMode ? <LightModeRoundedIcon /> : <DarkModeRoundedIcon />}
-        </IconButton>
-      </Tooltip>
+      <IconAction
+        icon={isDarkMode ? 'lightMode' : 'darkMode'}
+        label={toggleLabel}
+        variant="header"
+        onClick={onToggleColorMode}
+      />
     </Box>
   );
 };

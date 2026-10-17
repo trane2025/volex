@@ -1,10 +1,7 @@
-import AdminPanelSettingsRoundedIcon from '@mui/icons-material/AdminPanelSettingsRounded';
-import PeopleAltRoundedIcon from '@mui/icons-material/PeopleAltRounded';
-import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
+import { AppIcon } from '../../UI/icons/AppIcon';
+import { IconBadge } from '../../UI/icons/IconBadge';
 import { useState } from 'react';
 import {
-  Alert,
-  Avatar,
   Box,
   Button,
   CircularProgress,
@@ -25,6 +22,7 @@ import {
 import type { User } from '../../store/features/users/types.ts';
 import { TableUsers } from './TableUsers.tsx';
 import { getUpdateUserErrorMessage } from './helpers/getUpdateUserErrorMessage.ts';
+import { MessageAlert } from '../../UI/alerts/MessageAlert';
 
 type EditUserField = 'email' | 'name';
 
@@ -133,9 +131,7 @@ export const AdminPage = () => {
               }}
             >
               <Stack direction="row" spacing={2} sx={{ alignItems: 'center' }}>
-                <Avatar sx={{ bgcolor: 'primary.main' }}>
-                  <AdminPanelSettingsRoundedIcon />
-                </Avatar>
+                <IconBadge name="admin" />
 
                 <Box>
                   <Typography component="h1" variant="h4" sx={{ fontWeight: 700 }}>
@@ -153,7 +149,7 @@ export const AdminPage = () => {
                   isFetching ? (
                     <CircularProgress color="inherit" size={16} />
                   ) : (
-                    <RefreshRoundedIcon />
+                    <AppIcon name="refresh" />
                   )
                 }
                 disabled={isFetching}
@@ -164,7 +160,7 @@ export const AdminPage = () => {
             </Stack>
           </Paper>
 
-          {isError ? <Alert severity="error">Не удалось загрузить пользователей</Alert> : null}
+          <MessageAlert message={isError ? 'Не удалось загрузить пользователей' : null} />
 
           <Paper
             elevation={0}
@@ -186,7 +182,7 @@ export const AdminPage = () => {
               }}
             >
               <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
-                <PeopleAltRoundedIcon color="primary" />
+                <AppIcon name="users" color="primary" />
                 <Typography component="h2" variant="h6" sx={{ fontWeight: 700 }}>
                   Пользователи
                 </Typography>

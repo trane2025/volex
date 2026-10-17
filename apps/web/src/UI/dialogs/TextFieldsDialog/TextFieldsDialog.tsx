@@ -1,5 +1,4 @@
 import {
-  Alert,
   Box,
   Button,
   CircularProgress,
@@ -13,6 +12,7 @@ import {
 } from '@mui/material';
 import { useId } from 'react';
 import type { ComponentProps, ReactNode } from 'react';
+import { MessageAlert } from '../../alerts/MessageAlert';
 
 export type TextFieldsDialogValues<FieldName extends string = string> = Record<FieldName, string>;
 
@@ -107,7 +107,7 @@ export const TextFieldsDialog = <FieldName extends string = string>({
               <DialogContentText id={descriptionId}>{description}</DialogContentText>
             ) : null}
 
-            {errorText ? <Alert severity="error">{errorText}</Alert> : null}
+            <MessageAlert message={errorText} />
 
             <Box
               component="fieldset"
