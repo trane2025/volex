@@ -66,28 +66,30 @@ export const Navbar = ({ colorMode, onToggleColorMode }: NavbarProps) => {
             </IconButton>
           </Tooltip>
         ) : null}
-        <Tooltip title="Открыть админку">
-          <IconButton
-            aria-label="Открыть админку"
-            color={isAdminPage ? 'primary' : 'inherit'}
-            component={RouterLink}
-            to="/admin"
-            sx={{
-              width: 44,
-              height: 44,
-              border: '1px solid',
-              borderColor: isAdminPage ? 'primary.main' : 'divider',
-              bgcolor: 'background.paper',
-              boxShadow: 2,
-              pointerEvents: 'auto',
-              '&:hover': {
-                bgcolor: 'action.hover',
-              },
-            }}
-          >
-            <AdminPanelSettingsRoundedIcon />
-          </IconButton>
-        </Tooltip>
+        {user?.role === 'ADMIN' ? (
+          <Tooltip title="Открыть админку">
+            <IconButton
+              aria-label="Открыть админку"
+              color={isAdminPage ? 'primary' : 'inherit'}
+              component={RouterLink}
+              to="/admin"
+              sx={{
+                width: 44,
+                height: 44,
+                border: '1px solid',
+                borderColor: isAdminPage ? 'primary.main' : 'divider',
+                bgcolor: 'background.paper',
+                boxShadow: 2,
+                pointerEvents: 'auto',
+                '&:hover': {
+                  bgcolor: 'action.hover',
+                },
+              }}
+            >
+              <AdminPanelSettingsRoundedIcon />
+            </IconButton>
+          </Tooltip>
+        ) : null}
       </Box>
       <Tooltip title={toggleLabel}>
         <IconButton

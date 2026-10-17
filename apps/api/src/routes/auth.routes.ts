@@ -80,6 +80,7 @@ authRouter.post('/login', async (req: LoginRequest, res) => {
   res.status(200).json({
     id: user.id,
     email: user.email,
+    role: user.role,
     name: user.name,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
