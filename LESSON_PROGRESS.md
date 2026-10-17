@@ -4,6 +4,16 @@ Last updated: 2026-10-17
 
 ## Latest Lesson Checkpoint — 2026-10-17
 
+- Latest continuation: the student implemented backend authorization in `apps/api/src/middleware/requireAdmin.ts` and connected it in `users.routes.ts`.
+- `requireAdmin` reads `req.session.userId`, returns 401 for missing session identity or a missing database user, returns 403 for a non-ADMIN role, and calls `next()` only for ADMIN.
+- `usersRouter.use(requireAdmin)` is placed after the public `POST /users` registration handler and before all GET, PATCH, and DELETE user routes. Registration still uses the database default USER role.
+- Reviewed the student's middleware and route order; ran Prettier on both changed API files and `npm run build` in `apps/api`; all passed. An unused type import `NextFunction` remains as a minor student cleanup, with no build failure.
+- The student reported the preceding guest/USER/ADMIN UI verification block working. Backend behavior after adding middleware has not yet been manually verified.
+- First action in the next window: verify GET /users without cookies returns 401, with a USER session returns 403, and with an ADMIN session returns 200; verify registration remains public and ADMIN update/delete still work using disposable test data. Explain request flow and inspect results before moving on.
+- Explained Express middleware (`req`, `res`, `next`), middleware ordering, terminating a response versus calling `next()`, and the distinction between 401 and 403. Also explained why request payloads remain visible in browser DevTools, HTTPS transport protection, bcrypt storage, and password reset instead of recovering an old password. Password recovery is not implemented.
+- Continue student-written application code by default, with detailed explanations and blocks of 3–5 related tasks. Assistant reviews and formats. Do not start JWT or WebSocket yet. The Word plan is not authoritative.
+- The older frontend checkpoint below is retained for context; its next-lesson instruction to implement middleware is now completed.
+
 - The student explicitly asked the assistant to implement this frontend role block so they can review it, and requested clearer explanations of which application layer and files are involved.
 - `ProtectedRoute` now accepts optional `requiredRole: UserRole`, reads the current user, redirects missing users to `/login`, and redirects role mismatches to `/messenger`.
 - `App.tsx` requires `ADMIN` for `/admin`; `/messenger` still requires only authentication.

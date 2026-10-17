@@ -3,6 +3,7 @@ import { Router, type Request } from 'express';
 
 import { Prisma } from '../generated/prisma/client.js';
 import { prisma } from '../lib/prisma.js';
+import { requireAdmin } from '../middleware/requireAdmin.js';
 
 export const usersRouter = Router();
 
@@ -55,6 +56,8 @@ usersRouter.post('/', async (req: CreateUserRequest, res) => {
     res.status(500).json({ message: 'Не удалось создать пользователя' });
   }
 });
+
+usersRouter.use(requireAdmin);
 
 usersRouter.get('/', async (_req, res) => {
   const users = await prisma.user.findMany({
