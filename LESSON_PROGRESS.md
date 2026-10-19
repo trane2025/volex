@@ -1,36 +1,30 @@
 # Volex Lesson Progress
 
-Last updated: 2026-10-17
+Last updated: 2026-10-19
 
-## Latest Lesson Checkpoint — 2026-10-17
+## Latest Lesson Checkpoint — 2026-10-19
 
-- Latest continuation: the student implemented backend authorization in `apps/api/src/middleware/requireAdmin.ts` and connected it in `users.routes.ts`.
-- `requireAdmin` reads `req.session.userId`, returns 401 for missing session identity or a missing database user, returns 403 for a non-ADMIN role, and calls `next()` only for ADMIN.
-- `usersRouter.use(requireAdmin)` is placed after the public `POST /users` registration handler and before all GET, PATCH, and DELETE user routes. Registration still uses the database default USER role.
-- Reviewed the student's middleware and route order; ran Prettier on both changed API files and `npm run build` in `apps/api`; all passed. An unused type import `NextFunction` remains as a minor student cleanup, with no build failure.
-- The student reported all manual backend checks passing: GET /users returns 401 without cookies, 403 with USER, and 200 with ADMIN; public registration returns 201 with USER even when ADMIN is requested in the body; ADMIN update/delete work with disposable test data. These are student-reported results, not independently rerun by the assistant.
-- At the student's explicit request, the assistant implemented the logout block in Navbar: clear the previous error, await logout().unwrap(), reset usersQuery and authQuery caches on success, and navigate to /login. Failed requests show an Alert and do not execute the success cleanup/navigation. Prettier, frontend lint, and build passed.
-- Next action: review the logout implementation with the student and manually verify successful logout, network-error feedback, and switching accounts. Browser behavior for this block has not yet been verified. Resume student-written application changes by default.
-- At the student's request, extracted all six MUI Alert usages into `UI/alerts/MessageAlert.tsx`. It handles empty messages, severity, and inline/form/header placement styles. Navbar, login, registration, admin, and TextFieldsDialog now use it. Existing styles were preserved; Prettier, frontend lint, and build passed. Browser appearance has not been independently verified.
-- At the student's request, centralized all 11 explicit Material icon imports in `UI/icons/AppIcon.tsx`, added `IconBadge` for styled heading avatars and `IconAction` for header/table buttons with tooltips and accessible labels. Migrated Navbar, login, registration, admin, and TableUsers; icon-related styles now live in UI. Prettier, lint, and build passed; browser appearance remains unverified.
-- Explained Express middleware (`req`, `res`, `next`), middleware ordering, terminating a response versus calling `next()`, and the distinction between 401 and 403. Also explained why request payloads remain visible in browser DevTools, HTTPS transport protection, bcrypt storage, and password reset instead of recovering an old password. Password recovery is not implemented.
-- Continue student-written application code by default, with detailed explanations and blocks of 3–5 related tasks. Assistant reviews and formats. Do not start JWT or WebSocket yet. The Word plan is not authoritative.
-- The older frontend checkpoint below is retained for context; its next-lesson instruction to implement middleware is now completed.
-
-- The student explicitly asked the assistant to implement this frontend role block so they can review it, and requested clearer explanations of which application layer and files are involved.
-- `ProtectedRoute` now accepts optional `requiredRole: UserRole`, reads the current user, redirects missing users to `/login`, and redirects role mismatches to `/messenger`.
-- `App.tsx` requires `ADMIN` for `/admin`; `/messenger` still requires only authentication.
-- `Navbar` shows the admin button only for `ADMIN` users.
-- Changed frontend files were formatted; frontend lint and build passed. Browser behavior has not been manually verified in this block.
-- Next lesson: explain/review these changes and verify guest, USER, and ADMIN navigation, then add backend authorization for administrative user routes. Frontend guards alone do not protect API access. Keep registration public.
-- This checkpoint supersedes the older "First action on resume" below. Resume student-written code by default unless they ask for further implementation.
+- This checkpoint accompanies the commit `Add profile editing and begin JWT authentication migration` on main. The user requested committing/pushing the lesson work and continuing in a new conversation. Check Git for the final commit hash and remote status.
+- Profile editing is complete: PATCH /auth/me validates a string name, trims it, stores an empty name as null, and returns the updated public user. MessengerPage and EditProfileDialog connect the updateMe mutation, loading/error states, and conditional rendering. UpdateMeBody is re-exported.
+- The student confirmed all profile browser checks passed before the JWT migration: saving, trimming/clearing name, reopening, refresh persistence, and failed-save feedback/retry. Earlier cookie-session auth/admin/logout/shared UI checks also passed. Accept these results; do not repeat them as old work.
+- JWT is now partially integrated. jose creates HS256 access tokens with sub, iat, and a 20-minute expiration. verifyAccessToken checks the signature, allowed algorithm, required sub/iat/exp, and a positive safe-integer user id.
+- Login issues an httpOnly accessToken cookie with sameSite lax, path /, production-only secure, and a 20-minute maxAge. Shared options live in authCookie.ts. Logout clears this cookie after successful session destruction.
+- cookie-parser is installed and connected before routes. Express Request is augmented with optional userId. requireAuth reads accessToken, verifies it, sets req.userId, and returns 401 on missing or invalid tokens.
+- The student fixed both GET and PATCH /auth/me to read req.userId (not req.session.userId). Both use requireAuth and still query the database to reject missing users. These last two replacements were reviewed and API build passed.
+- Migration remains intentionally incomplete: requireAdmin still reads req.session.userId; login still writes the session; logout still destroys it; index.ts still installs express-session and requires SESSION_SECRET. Do not describe JWT migration as finished.
+- First next lesson block: migrate administrative routes to requireAuth + requireAdmin in that order, preserve public POST /users before those middleware, change requireAdmin to read req.userId, then remove session setup/assignment/destruction/types/dependencies and the obsolete SESSION_SECRET example. Explain the exact edits for the student to type. Afterward verify the newly migrated JWT HTTP/browser behavior, including no-token/invalid-token responses and USER/ADMIN authorization, plus login/logout and profile access. Existing sessions alone no longer authorize /auth/me; log in again to obtain a JWT cookie. JWT cookie/browser flow has not yet been manually verified.
+- Validation: frontend lint/build passed earlier in this conversation; API build passed after the final /me replacements. Isolated runtime checks passed for JWT success, malformed token, wrong key, expiration, missing exp, disallowed algorithm, and invalid ids. Middleware checks passed for valid JWT (userId and next once) and absent/empty/non-string/invalid tokens (401 without next). These checks used a temporary in-memory secret and did not exercise HTTP routes or mutate the database.
+- JWT_SECRET is configured in the original local checkout; .env.example has an empty JWT_SECRET entry. Never commit .env or expose secrets. A fresh worktree may lack local .env, dependencies, or the SQLite database; do not confuse that with an application regression.
+- Teaching contract: the student writes application code; the assistant explains, reviews, formats, and verifies. The student explicitly wants detailed walkthroughs: exact imports and code snippets in small explained parts, file locations and insertion points, explanations of new lines, syntax, types, parameters, methods, and return values. Give 3–5 related steps per block. Do not implement application code unless explicitly requested. Run checks at meaningful checkpoints.
+- WebSocket remains deferred. Do not modify or commit docs/ without a separate request. It is untracked and excluded from this handoff commit.
+- This checkpoint supersedes historical next-step suggestions below.
 
 ## How To Resume
 
 In a new chat, say:
 
 ```txt
-Продолжаем урок Volex. Прочитай LESSON_PROGRESS.md и продолжи с раздела "Next Lesson".
+Продолжаем урок Volex. Прочитай Latest Lesson Checkpoint в LESSON_PROGRESS.md. Продолжим миграцию административных маршрутов на JWT и удаление express-session. Код пишу я; объясняй подробно, проверяй и форматируй.
 ```
 
 The learning format should stay practical, but use larger task blocks now:
@@ -39,6 +33,7 @@ The learning format should stay practical, but use larger task blocks now:
 - prefer larger lesson blocks: explain the idea briefly, then give 3-5 related tasks;
 - avoid spending too much context on tiny one-line changes unless the concept is genuinely new or risky;
 - explain what the code means before adding more code;
+- provide exact code and imports in explained parts, including file location and line-by-line explanations of new syntax, types, methods, parameters, and return values; the student explicitly requested this detailed walkthrough format;
 - give a compact task block for the student to do by hand;
 - check the result after the student finishes the whole block;
 - the assistant must not write application code unless the student explicitly asks for implementation;
@@ -451,57 +446,16 @@ Prisma error P2025 also appears when the record to delete was not found.
 
 ## Next Lesson
 
-Continue the authentication lesson without assistant-written app code.
+Follow the Latest Lesson Checkpoint above. Authentication, administrative authorization, logout, and shared UI work are complete and manually verified by the student.
 
-The student asked for a faster lesson format with larger task blocks. Avoid one-line microtasks when a larger practical block would be clearer.
+Next: implement self-service display-name editing, starting with backend `PATCH /auth/me`, then connect the frontend in a separate practical block. Keep cookie sessions; JWT and WebSocket are deferred.
 
-Current checkpoint:
+- The student writes application code; the assistant explains, reviews, and formats.
+- Give 3–5 related tasks per block.
+- Check new behavior at meaningful checkpoints; do not repeat completed checks.
+- Do not modify `docs/` without a separate request.
 
-```txt
-- passwordHash exists in Prisma and the SQLite migration is applied;
-- registration hashes passwords with bcrypt cost 12;
-- passwordHash is globally omitted from normal Prisma User results;
-- the registration UI sends a password and was manually verified;
-- POST /auth/login finds a user and compares the password;
-- express-session middleware and the SessionData userId type are connected;
-- wrong passwords no longer write userId into the session;
-- GET /auth/me returns the session user or 401;
-- POST /auth/logout destroys the session and returns 204;
-- API formatting and build pass after completing the backend session routes;
-- frontend auth RTK Query feature is created and connected to the Redux store;
-- LoginPage calls the login mutation, prevents native GET form submission, shows errors, and redirects to /messenger after success;
-- frontend formatting, lint, and build pass after connecting LoginPage;
-- `ProtectedRoute` has been created from `useGetMeQuery()`;
-- `/messenger` is protected by `ProtectedRoute`;
-- logout UI has been added to `Navbar`;
-- the auth RTK Query cache uses an `Auth` tag so login/logout can refresh `GET /auth/me`;
-- the student has just wrapped `/admin` in `ProtectedRoute`;
-- the `/admin` protection change was reviewed; frontend Prettier, lint, and build pass;
-- the first role block is complete: Prisma `User.role String @default("USER")`, SQLite migration, backend login response includes `role`, frontend `User` has `role: 'USER' | 'ADMIN'`;
-- backend Prettier/build and frontend Prettier/lint/build pass after the first role block;
-- the automated HTTP chain could not be completed because isolated command processes could not connect to the locally started port, although the API started successfully.
-```
-
-First action on resume:
-
-```txt
-Continue role authorization: protect `/admin` by checking `user.role === 'ADMIN'`, not only login state.
-```
-
-Continue in this order:
-
-1. Verify the completed cookie-session route protection block: `/messenger`, `/admin`, refresh restoration, and logout.
-2. Explain authentication vs authorization using the current app: "logged in" is not the same as "admin".
-3. Start the roles block in larger practical steps: add a user role to the backend data model, expose it safely, and then protect `/admin` by role.
-4. Only after cookie-session plus role authorization works, start the separate JWT lesson.
-
-Teaching rules remain unchanged:
-
-- the student writes application code unless explicitly asking the assistant to implement;
-- use practical blocks rather than one-line microsteps;
-- explain before asking for changes;
-- inspect each student change and run Prettier automatically;
-- run lint/build at meaningful checkpoints.
+The completed list and later planning notes below are historical context; they do not override the Latest Lesson Checkpoint.
 
 Completed:
 

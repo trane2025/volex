@@ -2,6 +2,9 @@ import { compare } from 'bcryptjs';
 import { Router, type Request } from 'express';
 
 import { prisma } from '../lib/prisma.js';
+import { createAccessToken } from '../lib/jwt.js';
+import { accessTokenCookieOptions } from '../lib/authCookie.js';
+import { requireAuth } from '../middleware/requireAuth.js';
 
 export const authRouter = Router();
 
@@ -12,8 +15,8 @@ type LoginBody = {
 
 type LoginRequest = Request<Record<string, never>, unknown, LoginBody>;
 
-authRouter.get('/me', async (req, res) => {
-  const userId = req.session.userId;
+authRouter.get('/me', requireAuth, async (req, res) => {
+  const userId = req.userId;
 
   if (!userId) {
     res.status(401).json({ message: 'Не авторизован' });
@@ -34,6 +37,46 @@ authRouter.get('/me', async (req, res) => {
   res.status(200).json(user);
 });
 
+authRouter.patch('/me', requireAuth, async (req, res) => {
+  const { name } = req.body ?? {};
+
+  const userId = req.userId;
+
+  if (!userId) {
+    res.status(401).json({ message: 'Не авторизован' });
+    return;
+  }
+
+  const user = await prisma.user.findUnique({
+    where: {
+      id: userId,
+    },
+  });
+
+  if (!user) {
+    res.status(401).json({ message: 'Не авторизован' });
+    return;
+  }
+
+  if (typeof name !== 'string') {
+    res.status(400).json({ message: 'Имя должно быть строкой' });
+    return;
+  }
+
+  const trimmedName = name.trim();
+
+  const updatedUser = await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      name: trimmedName === '' ? null : trimmedName,
+    },
+  });
+
+  res.status(200).json(updatedUser);
+});
+
 authRouter.post('/logout', (req, res) => {
   req.session.destroy((error) => {
     if (error) {
@@ -42,6 +85,8 @@ authRouter.post('/logout', (req, res) => {
       });
       return;
     }
+
+    res.clearCookie('accessToken', accessTokenCookieOptions);
 
     res.sendStatus(204);
   });
@@ -75,7 +120,12 @@ authRouter.post('/login', async (req: LoginRequest, res) => {
     res.status(401).json({ message: 'Неверный email или пароль' });
     return;
   }
+
+  const accessToken = await createAccessToken(user.id);
+
   req.session.userId = user.id;
+
+  res.cookie('accessToken', accessToken, { ...accessTokenCookieOptions, maxAge: 20 * 60 * 1000 });
 
   res.status(200).json({
     id: user.id,

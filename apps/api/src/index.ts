@@ -4,6 +4,7 @@ import 'dotenv/config';
 import { healthRouter } from './routes/health.routes.js';
 import { usersRouter } from './routes/users.routes.js';
 import { authRouter } from './routes/auth.routes.js';
+import cookieParser from 'cookie-parser';
 import session from 'express-session';
 
 const sessionSecret = process.env.SESSION_SECRET;
@@ -14,6 +15,7 @@ if (!sessionSecret) {
 
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
 app.use(
   session({
     secret: sessionSecret,
