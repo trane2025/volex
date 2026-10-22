@@ -1,9 +1,9 @@
-import type { NextFunction, RequestHandler } from 'express';
+import type { RequestHandler } from 'express';
 
 import { prisma } from '../lib/prisma.js';
 
 export const requireAdmin: RequestHandler = async (req, res, next) => {
-  const userId = req.session.userId;
+  const userId = req.userId;
 
   if (!userId) {
     res.status(401).json({ message: 'Не авторизован' });

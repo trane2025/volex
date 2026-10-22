@@ -1,6 +1,55 @@
 # Volex Lesson Progress
 
-Last updated: 2026-10-19
+Last updated: 2026-10-22
+
+## Latest Lesson Checkpoint — 2026-10-22 (profile page and messenger UI)
+
+- At the student's explicit request, moved the existing profile card and edit logic to /profile (ProfilePage), moved EditProfileDialog alongside it, protected the new route, and added profile/messenger links to Navbar. Existing getMe/updateMe/dialog logic is preserved.
+- MessengerPage now contains presentation-only ChatSidebar, ChatHeader, MessageList, and MessageComposer components. Layout follows a familiar messenger structure, with a compact avatar sidebar on small screens, a chat header, empty conversation area, and composer. Light/dark theme is supported. Search, attachment, and send controls are disabled; no mock messages, new messaging logic, or socket lifecycle were added.
+- Student has installed Socket.IO on the API and added a shared Node HTTP server with connection/disconnection logging. Vite proxies /socket.io with ws: true. The client lives in apps/web/src/socket/socket.ts with autoConnect: false and websocket transport. It is not yet connected by MessengerPage. Socket authentication and message events are not implemented.
+- Frontend build (including TypeScript), lint, and API build passed. Changed UI files and the existing server entry/Vite config were formatted. New UI/profile browser verification has not been performed by the assistant.
+- Student requested committing accumulated work, excluding docs/. No push requested. Continue the Socket.IO lesson from the existing server/client setup; do not restart completed JWT/auth lessons or require Prisma message persistence first.
+- Student normally writes code; explicit implementation authorization covered this profile/UI block. Preserve the teaching format: overall architecture first, then connected small code blocks with syntax/type explanations.
+
+## Latest Lesson Checkpoint — 2026-10-21 (shared base query)
+
+- At the student's explicit request, the assistant implemented the shared wrapper discussed below. This authorization was for this block; the student normally writes application code.
+- Added apps/web/src/store/baseQuery.ts: delegates to fetchBaseQuery with shared baseUrl and credentials: 'include', dispatches authUnauthorized on status 401 unless extraOptions.skipAuthRevalidation is true, and returns the original result unchanged.
+- Placed authEvents.ts inside store/features/auth at the student's suggestion. The wrapper imports the event directly from that file, avoiding the auth barrel and a circular dependency through authQuery.
+- Both authQuery and usersQuery now use the shared baseQuery. login, getMe, logout, and public createUser opt out of the wrapper's auth revalidation. Existing endpoint tag invalidation remains unchanged.
+- authListener now listens to authUnauthorized instead of enumerating rejected endpoints. It still invalidates Auth; existing store middleware registration is unchanged.
+- Explained the overall request/event/revalidation/ProtectedRoute flow, wrapper types and syntax, endpoint extraOptions, and file placement.
+- Changed frontend files were formatted; frontend build (including TypeScript) and lint passed. The student subsequently confirmed the browser redirect occurred in the missing-cookie check and explicitly asked to move on. Accept that confirmation and close this lesson block; do not repeat auth checks. The student did not separately report the wrong-password check.
+- The student explicitly rejected starting with Prisma message persistence and requested proceeding directly to WebSockets. Next block is Socket.IO server/client connection, an HTTP server shared with Express, Vite WebSocket proxy, and React connection lifecycle. socket.io-client is already installed; socket.io server is not yet installed. Message schema/migration work is deferred; do not require it before sockets. Explain architecture and then connected code blocks; student writes code unless explicitly requesting implementation. Initial connection demonstration does not yet authenticate sockets or exchange user messages; existing Express requireAuth does not automatically protect Socket.IO.
+- Limitations remain: no refresh token, no idle expiration timer, no explicit coordination of concurrent 401 events, and no full cache cleanup on this path. Existing ProtectedRoute redirects on any getMe error, including network/server errors.
+- Preserve existing staged/unstaged changes. docs/ remains untouched. No commit or push requested or performed. This checkpoint supersedes the earlier checkpoints below.
+
+## Latest Lesson Checkpoint — 2026-10-21
+
+- The student confirmed all four post-JWT browser checks passed: login and messenger navigation, accessToken cookie attributes, reload with successful /auth/me, and logout with cookie removal and protected-route rejection.
+- The student completed the expiration experiment: the open page remained visible, and reloading after expiration redirected to login. The student restored 20m; the assistant verified it in jwt.ts.
+- At the student's explicit request, the assistant completed src/middleware/authListener.ts and connected it with prepend in store/index.ts. It matches rejected updateMe/getUsers/updateUser/deleteUser requests and invalidates Auth only for status 401. The explicit matcher guard inside effect fixes TypeScript inferring Action without payload. Login and getMe are excluded to avoid treating wrong passwords as expired auth or creating a revalidation loop.
+- Frontend Prettier, build (including TypeScript), and lint passed. Browser verification of the new listener remains pending: with the profile dialog open, remove accessToken in DevTools, then save; expect PATCH /auth/me 401, GET /auth/me 401, and navigation to /login without a page reload. This simulates missing authentication, not JWT expiration itself.
+- The student needs the overall architecture and purpose explained before isolated code edits: describe the problem, participating layers, request/action flow, then exact edits. The implementation request applies to this block; otherwise preserve the teaching contract.
+- Server token expiration and browser cookie lifetime are independent, and cached frontend user data does not automatically disappear when a token expires. The new listener reacts to protected-request failures; it does not schedule expiration checks on an idle page.
+- Explained isAnyOf: it returns a predicate combining endpoint matchRejected functions with OR semantics; matching a failed endpoint and checking status 401 are separate steps. The student correctly identified that the current explicit list must be extended for each new protected endpoint.
+- Discussed a shared fetchBaseQuery wrapper as a possible next improvement to centralize 401 handling. This is a proposed direction, not implemented. Explain the architecture before choosing edits: request -> shared base query -> unauthorized event/handling -> auth revalidation -> ProtectedRoute. Account for login's wrong-password 401 and getMe's own 401 to avoid loops; preserve 403 and network-error behavior. Avoid circular imports between the base query and API modules. No refresh-token flow has been implemented or assigned.
+- Resume with the overall picture, acknowledge that browser verification of the existing listener is still pending, then proceed toward shared request/error handling in small coherent lesson blocks. Do not repeat completed JWT migration or expiration exercises. Do not claim the current listener handles every request automatically.
+- Explicit lesson format going forward: first explain the user-visible problem, intended result, participating files/layers and their responsibilities, and the complete flow with an example or diagram. Explain why this approach was chosen and its limitations. Only then provide code in 3–5 related steps, with exact file locations/imports and explanations of new syntax, types, arguments and return values. Do not present disconnected snippets without context.
+- Handoff requested for a new window. Changes remain uncommitted; this turn did not request a commit or push. Preserve existing staged/unstaged changes. docs/ remains untracked and outside scope.
+- Teaching contract remains: student writes application code; assistant explains, reviews, formats, and verifies. Do not modify docs/ without a separate request.
+- This checkpoint supersedes next-step instructions below.
+
+## Latest Lesson Checkpoint — 2026-10-20
+
+- The student migrated usersRouter to requireAuth + requireAdmin, keeping public registration before those middleware. requireAdmin now reads req.userId.
+- The student removed express-session setup, login assignment, logout destruction, type augmentation, dependencies, and SESSION_SECRET from .env.example. Local .env was not inspected.
+- Logout now clears accessToken and returns 204. API Prettier and build passed.
+- The assistant ran 30 successful HTTP assertions against the actual API source on a separate port with a temporary SQLite database initialized from repository migrations and an ephemeral JWT secret. No student database records were changed.
+- Verified: missing/invalid JWT and old session cookie rejected; public registration; wrong-password rejection; successful login without passwordHash leakage; cookie HttpOnly, SameSite=Lax, Path=/, Max-Age=1200; USER denied administrative GET/PATCH/DELETE; ADMIN allowed list/detail; profile update, trimming, persistence, and clearing; logout cookie expiration and 204; no-cookie access rejected after logout; logout with invalid token; expired JWT and deleted-user rejection.
+- These are HTTP checks, not browser UI checks. Browser navigation, cookie handling, and frontend login/logout integration have not been verified since migration. Next continue with that integration check, then discuss JWT expiration behavior.
+- Teaching contract remains: student writes application code; assistant explains exact edits in small related blocks, reviews, formats, and verifies. Do not modify docs/ without a separate request.
+- This checkpoint supersedes next-step instructions in the older checkpoint below.
 
 ## Latest Lesson Checkpoint — 2026-10-19
 
@@ -24,7 +73,7 @@ Last updated: 2026-10-19
 In a new chat, say:
 
 ```txt
-Продолжаем урок Volex. Прочитай Latest Lesson Checkpoint в LESSON_PROGRESS.md. Продолжим миграцию административных маршрутов на JWT и удаление express-session. Код пишу я; объясняй подробно, проверяй и форматируй.
+Продолжаем урок Volex. Прочитай последний Latest Lesson Checkpoint в LESSON_PROGRESS.md и проверь текущий код. JWT-миграция завершена, эксперимент с истечением токена пройден, срок возвращён на 20m. Добавлен authListener для 401 у выбранных защищённых запросов; build и lint проходят, проверка нового слушателя в браузере ещё не подтверждена. Мы обсудили ограничение ручного списка isAnyOf и общую обёртку над fetchBaseQuery как следующий шаг, но её ещё не реализовали. Сначала объясни общую картину: проблему, цель, роли файлов, полный путь запроса и обработки ошибки, ограничения решения. Только после этого давай код небольшими связанными блоками с подробными объяснениями. Обычно код пишу я, ты проверяешь и форматируешь; просьба реализовать прошлый блок самостоятельно была разовой. Не меняй docs/ и не делай commit/push без запроса.
 ```
 
 The learning format should stay practical, but use larger task blocks now:

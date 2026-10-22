@@ -1,3 +1,5 @@
+import ChatBubbleOutlineRounded from '@mui/icons-material/ChatBubbleOutlineRounded';
+import PersonOutlineRounded from '@mui/icons-material/PersonOutlineRounded';
 import AdminPanelSettingsRounded from '@mui/icons-material/AdminPanelSettingsRounded';
 import DarkModeRounded from '@mui/icons-material/DarkModeRounded';
 import DeleteRounded from '@mui/icons-material/DeleteRounded';
@@ -12,6 +14,8 @@ import RefreshRounded from '@mui/icons-material/RefreshRounded';
 import type { SvgIconProps } from '@mui/material';
 
 const icons = {
+  chat: ChatBubbleOutlineRounded,
+  profile: PersonOutlineRounded,
   admin: AdminPanelSettingsRounded,
   darkMode: DarkModeRounded,
   delete: DeleteRounded,

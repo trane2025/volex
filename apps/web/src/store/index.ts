@@ -1,6 +1,7 @@
 import { configureStore, combineSlices } from '@reduxjs/toolkit';
 import { usersQuery } from './features/users';
 import { authQuery } from './features/auth';
+import { authListener } from '../middleware/authListener';
 
 const rootReducer = combineSlices(usersQuery, authQuery);
 
@@ -8,7 +9,9 @@ export const setupStore = () => {
   return configureStore({
     reducer: rootReducer,
     middleware: (getDefaultMiddleware) =>
-      getDefaultMiddleware().concat(usersQuery.middleware, authQuery.middleware),
+      getDefaultMiddleware()
+        .prepend(authListener.middleware)
+        .concat(usersQuery.middleware, authQuery.middleware),
   });
 };
 

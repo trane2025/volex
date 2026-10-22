@@ -4,38 +4,31 @@ import 'dotenv/config';
 import { healthRouter } from './routes/health.routes.js';
 import { usersRouter } from './routes/users.routes.js';
 import { authRouter } from './routes/auth.routes.js';
+import { createServer } from 'node:http';
+import { Server } from 'socket.io';
 import cookieParser from 'cookie-parser';
-import session from 'express-session';
-
-const sessionSecret = process.env.SESSION_SECRET;
-
-if (!sessionSecret) {
-  throw new Error('SESSION_SECRET не задан');
-}
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
-app.use(
-  session({
-    secret: sessionSecret,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    },
-  }),
-);
 
 app.use(healthRouter);
 app.use('/users', usersRouter);
 app.use('/auth', authRouter);
 
-const port = Number(process.env.PORT ?? 4000);
+const httpServer = createServer(app);
+const io = new Server(httpServer);
 
-app.listen(port, () => {
+io.on('connection', (socket) => {
+  console.log('Socket connection connected', socket.id);
+
+  socket.on('disconnect', (reason) => {
+    console.log('Socket disconnected', socket.id);
+  });
+});
+
+const port = Number(process.env.PORT || 4000);
+
+httpServer.listen(port, () => {
   console.log(`API is running on http://localhost:${port}`);
 });

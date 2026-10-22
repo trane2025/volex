@@ -78,18 +78,8 @@ authRouter.patch('/me', requireAuth, async (req, res) => {
 });
 
 authRouter.post('/logout', (req, res) => {
-  req.session.destroy((error) => {
-    if (error) {
-      res.status(500).json({
-        message: 'Не удалось выйти из системы',
-      });
-      return;
-    }
-
-    res.clearCookie('accessToken', accessTokenCookieOptions);
-
-    res.sendStatus(204);
-  });
+  res.clearCookie('accessToken', accessTokenCookieOptions);
+  res.sendStatus(204);
 });
 
 authRouter.post('/login', async (req: LoginRequest, res) => {
@@ -122,8 +112,6 @@ authRouter.post('/login', async (req: LoginRequest, res) => {
   }
 
   const accessToken = await createAccessToken(user.id);
-
-  req.session.userId = user.id;
 
   res.cookie('accessToken', accessToken, { ...accessTokenCookieOptions, maxAge: 20 * 60 * 1000 });
 

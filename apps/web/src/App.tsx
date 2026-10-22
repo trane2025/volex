@@ -17,6 +17,9 @@ const LoginPage = lazy(() =>
 const MessengerPage = lazy(() =>
   import('./pages/MessengerPage').then((module) => ({ default: module.MessengerPage })),
 );
+const ProfilePage = lazy(() =>
+  import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage })),
+);
 const RegisterPage = lazy(() =>
   import('./pages/RegisterPage').then((module) => ({ default: module.RegisterPage })),
 );
@@ -74,6 +77,14 @@ export const App = () => {
                 element={
                   <ProtectedRoute>
                     <MessengerPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <ProfilePage />
                   </ProtectedRoute>
                 }
               />

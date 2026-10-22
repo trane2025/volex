@@ -57,6 +57,24 @@ export const Navbar = ({ colorMode, onToggleColorMode }: NavbarProps) => {
       <MessageAlert message={logoutError} placement="header" />
       <Box sx={{ display: 'flex', gap: 1 }}>
         {user ? (
+          <>
+            <IconAction
+              icon="chat"
+              label="Открыть мессенджер"
+              variant="header"
+              active={pathname === '/messenger'}
+              to="/messenger"
+            />
+            <IconAction
+              icon="profile"
+              label="Открыть профиль"
+              variant="header"
+              active={pathname === '/profile'}
+              to="/profile"
+            />
+          </>
+        ) : null}
+        {user ? (
           <IconAction
             icon="logout"
             label="Выйти"

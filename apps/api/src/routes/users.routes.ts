@@ -4,6 +4,7 @@ import { Router, type Request } from 'express';
 import { Prisma } from '../generated/prisma/client.js';
 import { prisma } from '../lib/prisma.js';
 import { requireAdmin } from '../middleware/requireAdmin.js';
+import { requireAuth } from '../middleware/requireAuth.js';
 
 export const usersRouter = Router();
 
@@ -57,7 +58,7 @@ usersRouter.post('/', async (req: CreateUserRequest, res) => {
   }
 });
 
-usersRouter.use(requireAdmin);
+usersRouter.use(requireAuth, requireAdmin);
 
 usersRouter.get('/', async (_req, res) => {
   const users = await prisma.user.findMany({

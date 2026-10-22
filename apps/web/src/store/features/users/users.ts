@@ -1,11 +1,10 @@
-import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { createApi } from '@reduxjs/toolkit/query/react';
+import { baseQuery } from '../../baseQuery';
 import type { CreateUserBody, UpdateUserRequest, User } from './types.ts';
 
 export const usersQuery = createApi({
   reducerPath: 'users',
-  baseQuery: fetchBaseQuery({
-    baseUrl: import.meta.env.VITE_API_URL ?? '/api',
-  }),
+  baseQuery,
   tagTypes: ['User'],
   endpoints: (builder) => ({
     getUsers: builder.query<User[], void>({
@@ -25,6 +24,7 @@ export const usersQuery = createApi({
         method: 'POST',
         body,
       }),
+      extraOptions: { skipAuthRevalidation: true },
       invalidatesTags: [{ type: 'User', id: 'LIST' }],
     }),
     updateUser: builder.mutation<User, UpdateUserRequest>({
