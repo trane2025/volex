@@ -1,6 +1,10 @@
 import { Avatar, Box, Stack, Typography } from '@mui/material';
 
-export const ChatHeader = () => (
+type ChatHeaderProps = {
+  isConnected: boolean;
+};
+
+export const ChatHeader = ({ isConnected }: ChatHeaderProps) => (
   <Stack
     component="header"
     direction="row"
@@ -19,8 +23,8 @@ export const ChatHeader = () => (
       <Typography component="h2" variant="subtitle1" sx={{ fontWeight: 700 }}>
         Общий чат
       </Typography>
-      <Typography variant="caption" color="text.secondary">
-        Место для ваших разговоров
+      <Typography variant="caption" sx={{ color: isConnected ? 'success.main' : 'text.secondary' }}>
+        {isConnected ? 'Соединение установлено' : 'Нет соединения с сервером'}
       </Typography>
     </Box>
   </Stack>

@@ -14,7 +14,7 @@ export const authQuery = createApi({
         method: 'POST',
         body,
       }),
-      extraOptions: { skipAuthRevalidation: true },
+      extraOptions: { skipAuthRevalidation: true, skipRefresh: true, changesAuthSession: true },
       invalidatesTags: ['Auth'],
     }),
     getMe: builder.query<User, void>({
@@ -35,7 +35,7 @@ export const authQuery = createApi({
         url: '/auth/logout',
         method: 'POST',
       }),
-      extraOptions: { skipAuthRevalidation: true },
+      extraOptions: { skipAuthRevalidation: true, skipRefresh: true, changesAuthSession: true },
       invalidatesTags: ['Auth'],
     }),
   }),

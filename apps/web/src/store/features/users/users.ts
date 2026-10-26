@@ -24,7 +24,7 @@ export const usersQuery = createApi({
         method: 'POST',
         body,
       }),
-      extraOptions: { skipAuthRevalidation: true },
+      extraOptions: { skipAuthRevalidation: true, skipRefresh: true },
       invalidatesTags: [{ type: 'User', id: 'LIST' }],
     }),
     updateUser: builder.mutation<User, UpdateUserRequest>({

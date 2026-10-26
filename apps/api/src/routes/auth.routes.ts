@@ -3,7 +3,18 @@ import { Router, type Request } from 'express';
 
 import { prisma } from '../lib/prisma.js';
 import { createAccessToken } from '../lib/jwt.js';
-import { accessTokenCookieOptions } from '../lib/authCookie.js';
+import {
+  ACCESS_TOKEN_MAX_AGE,
+  accessTokenCookieOptions,
+  clearAuthCookies,
+  refreshTokenCookieOptions,
+} from '../lib/authCookie.js';
+import {
+  createRefreshSession,
+  readRefreshToken,
+  revokeRefreshSession,
+  rotateRefreshSession,
+} from '../lib/refreshSession.js';
 import { requireAuth } from '../middleware/requireAuth.js';
 
 export const authRouter = Router();
@@ -77,8 +88,34 @@ authRouter.patch('/me', requireAuth, async (req, res) => {
   res.status(200).json(updatedUser);
 });
 
-authRouter.post('/logout', (req, res) => {
-  res.clearCookie('accessToken', accessTokenCookieOptions);
+authRouter.post('/refresh', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const token = readRefreshToken(req.cookies?.refreshToken);
+  const session = token ? await rotateRefreshSession(token) : null;
+
+  if (!session) {
+    clearAuthCookies(res);
+    res.status(401).json({ message: 'Сессия завершена. Войдите снова' });
+    return;
+  }
+
+  const accessToken = await createAccessToken(session.userId);
+  res.cookie('accessToken', accessToken, {
+    ...accessTokenCookieOptions,
+    maxAge: ACCESS_TOKEN_MAX_AGE,
+  });
+  res.cookie('refreshToken', session.token, {
+    ...refreshTokenCookieOptions,
+    maxAge: Math.max(0, session.expiresAt.getTime() - Date.now()),
+  });
+  res.sendStatus(204);
+});
+
+authRouter.post('/logout', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  const token = readRefreshToken(req.cookies?.refreshToken);
+  if (token) await revokeRefreshSession(token);
+  clearAuthCookies(res);
   res.sendStatus(204);
 });
 
@@ -112,8 +149,17 @@ authRouter.post('/login', async (req: LoginRequest, res) => {
   }
 
   const accessToken = await createAccessToken(user.id);
+  const session = await createRefreshSession(user.id, readRefreshToken(req.cookies?.refreshToken));
 
-  res.cookie('accessToken', accessToken, { ...accessTokenCookieOptions, maxAge: 20 * 60 * 1000 });
+  res.setHeader('Cache-Control', 'no-store');
+  res.cookie('accessToken', accessToken, {
+    ...accessTokenCookieOptions,
+    maxAge: ACCESS_TOKEN_MAX_AGE,
+  });
+  res.cookie('refreshToken', session.token, {
+    ...refreshTokenCookieOptions,
+    maxAge: Math.max(0, session.expiresAt.getTime() - Date.now()),
+  });
 
   res.status(200).json({
     id: user.id,
